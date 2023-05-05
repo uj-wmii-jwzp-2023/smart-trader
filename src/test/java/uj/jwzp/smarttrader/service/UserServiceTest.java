@@ -14,7 +14,7 @@ import uj.jwzp.smarttrader.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -37,7 +37,7 @@ public class UserServiceTest {
         user.setRoles(List.of(role));
 
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        given(userRepository.findById(user.getId())).willReturn(Optional.of(user));
 
         Optional<User> savedUser= userService.getUserById(0L);
 
