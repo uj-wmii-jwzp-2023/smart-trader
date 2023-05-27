@@ -26,17 +26,20 @@ public class UserServiceTest {
 
     @Test
     public void GetUserById_Should_ReturnUser_When_ValidId() {
-        List<Role> roles = List.of(Role.USER);
-        String username = "user";
-        String password = "password";
-        String id = "0";
+        Role role=new Role();
+        role.setId(0L);
+        role.setName("USER");
 
-        User user = new User(username, password, roles);
-        user.setId(id);
+        User user=new User();
+        user.setId(0L);
+        user.setName("user");
+        user.setPassword("password");
+        user.setRoles(List.of(role));
+
 
         given(userRepository.findById(user.getId())).willReturn(Optional.of(user));
 
-        Optional<User> savedUser= userService.getUserById(id);
+        Optional<User> savedUser= userService.getUserById(0L);
 
         Assertions.assertThat(savedUser).isNotEmpty().hasValue(user);
     }

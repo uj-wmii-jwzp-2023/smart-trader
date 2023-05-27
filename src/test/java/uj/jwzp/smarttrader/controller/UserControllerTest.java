@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -27,7 +26,7 @@ import java.util.Optional;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
 public class UserControllerTest {
@@ -40,43 +39,39 @@ public class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private User dummyUser;
+    private User user;
 
     @BeforeEach
     public void setup() {
-        List<Role> roles = List.of(Role.USER);
-        String username = "user";
-        String password = "password";
+        Role role=new Role();
+        role.setId(0L);
+        role.setName("USER");
 
-        dummyUser = new User(username, password, roles);
+        user=new User();
+        user.setId(0L);
+        user.setName("user");
+        user.setPassword("password");
+        user.setRoles(List.of(role));
     }
 
     @Test
     public void GetUser_Should_ReturnOk_When_Exists() throws Exception {
-        String dummyId = "0";
-        dummyUser.setId(dummyId);
+        given(userService.getUserById(0L)).willReturn(Optional.of(user));
 
-        given(userService.getUserById(dummyId)).willReturn(Optional.of(dummyUser));
-
-        String url = String.format("/api/v1/users/%s", dummyId);
-        String body = mockMvc.perform(MockMvcRequestBuilders.get(url))
+        String body = mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/users/0"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         User returnedUser = objectMapper.readValue(body, User.class);
 
-        Assertions.assertThat(returnedUser).usingRecursiveComparison().isEqualTo(dummyUser);
+        Assertions.assertThat(returnedUser).usingRecursiveComparison().isEqualTo(user);
     }
 
     @Test
     public void GetUser_Should_ReturnNotFound_When_DontExists() throws Exception {
-        String existingId = "0";
-        String notExistingId = "1";
-        dummyUser.setId(existingId);
 
-        given(userService.getUserById(existingId)).willReturn(Optional.of(dummyUser));
+        given(userService.getUserById(0L)).willReturn(Optional.of(user));
 
-        String url = String.format("/api/v1/users/%s", notExistingId);
-        mockMvc.perform(MockMvcRequestBuilders.get(url))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/users/1"))
                 .andExpect(status().isNotFound());
 
     }

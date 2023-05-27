@@ -13,6 +13,7 @@ import uj.jwzp.smarttrader.dto.LoginDto;
 import uj.jwzp.smarttrader.dto.RegisterDto;
 import uj.jwzp.smarttrader.model.Role;
 import uj.jwzp.smarttrader.model.User;
+import uj.jwzp.smarttrader.repository.RoleRepository;
 import uj.jwzp.smarttrader.repository.UserRepository;
 
 import java.util.List;
@@ -22,14 +23,14 @@ import java.util.List;
 public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AuthController(AuthenticationManager authenticationManager,
-                          UserRepository userRepository,
-                          PasswordEncoder passwordEncoder) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -47,13 +48,14 @@ public class AuthController {
         if (userRepository.existsByName(registerDto.getUsername())) {
             return new ResponseEntity<>("Username is taken", HttpStatus.BAD_REQUEST);
         }
-        String username = registerDto.getUsername();
-        String password = passwordEncoder.encode(registerDto.getPassword());
-        List<Role> roles = List.of(Role.USER);
+        User user = new User();
+        user.setName(registerDto.getUsername());
+        user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 
-        User user = new User(username, password, roles);
+        Role role = roleRepository.findByName("USER").get();
+        user.setRoles(List.of(role));
+
         userRepository.save(user);
-
         return new ResponseEntity<>("User registered", HttpStatus.OK);
     }
 }
