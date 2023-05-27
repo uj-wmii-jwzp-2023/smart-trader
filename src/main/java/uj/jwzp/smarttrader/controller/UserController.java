@@ -1,6 +1,5 @@
 package uj.jwzp.smarttrader.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,22 +12,20 @@ import java.util.Optional;
 @RequestMapping(path = "api/v1/users", produces = "application/json")
 @RestController
 public class UserController {
-    private final UserService service;
-
-    @Autowired
-    public UserController(UserService service) {
-        this.service = service;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
+    private final UserService userService;
 
     @GetMapping
     public List<User> getAllUsers() {
-        return service.getAllUsers();
+        return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable("id") Long id) {
-        Optional<User> optionalPerson = service.getUserById(id);
-        return optionalPerson
+    public ResponseEntity<User> getUser(@PathVariable("id") String id) {
+        Optional<User> optionalUser = userService.getUserById(id);
+        return optionalUser
                 .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
     }
@@ -36,6 +33,6 @@ public class UserController {
     @PostMapping(consumes = "application/json")
     @ResponseStatus(HttpStatus.CREATED)
     public void addUser(@RequestBody User user) {
-        service.addUser(user);
+        userService.addUser(user);
     }
 }
