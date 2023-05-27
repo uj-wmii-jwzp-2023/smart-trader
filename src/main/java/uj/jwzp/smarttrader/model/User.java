@@ -1,29 +1,32 @@
 package uj.jwzp.smarttrader.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Document("User")
+@Entity
+@Table(name = "Users")
 public class User {
     @Id
-    private String id;
+    @GeneratedValue
+    private Long id;
+
     private String name;
+
     private String password;
-    private List<Role> roles;
 
-    public User(String name, String password, List<Role> roles) {
-        this.name = name;
-        this.password = password;
-        this.roles = roles;
-    }
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
+    )
+    private List<Role> roles = new ArrayList<>();
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
