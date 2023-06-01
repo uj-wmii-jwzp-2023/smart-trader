@@ -1,32 +1,29 @@
 package uj.jwzp.smarttrader.service;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import uj.jwzp.smarttrader.model.User;
+import uj.jwzp.smarttrader.repository.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserService {
-    private final JpaRepository<User, Long> repository;
-
-    @Autowired
-    public UserService(JpaRepository<User, Long> repository) {
-        this.repository = repository;
+    private final UserRepository userRepository;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public void addUser(User user) {
-        repository.save(user);
+        userRepository.save(user);
     }
 
     public List<User> getAllUsers() {
-        return repository.findAll();
+        return userRepository.findAll();
     }
 
-    public Optional<User> getUserById(Long id) {
-        return repository.findById(id);
+    public Optional<User> getUserById(String id) {
+        return userRepository.findById(id);
     }
 }
