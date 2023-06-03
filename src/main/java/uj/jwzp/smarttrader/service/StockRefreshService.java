@@ -66,7 +66,7 @@ public class StockRefreshService {
 
 
 
-    @Scheduled(fixedRate = 100000)
+    @Scheduled(fixedRate = 70000)
     public void updateAllStockPrices() {
 
         List<Stock> stocks = stockRepository.findAll();
