@@ -23,9 +23,9 @@ public class StockController {
         return stockService.getAllStocks();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Stock> getStock(@PathVariable("id") String id) {
-        Optional<Stock> optionalStock = stockService.getStockById(id);
+    @GetMapping("/{ticker}")
+    public ResponseEntity<Stock> getStock(@PathVariable("ticker") String ticker) {
+        Optional<Stock> optionalStock = stockService.getStockByTicker(ticker);
         return optionalStock
                 .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
