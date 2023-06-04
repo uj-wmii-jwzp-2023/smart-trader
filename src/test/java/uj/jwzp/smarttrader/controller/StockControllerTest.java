@@ -50,12 +50,12 @@ public class StockControllerTest {
 
     @Test
     public void GetStock_Should_ReturnOk_When_Exists() throws Exception {
-        String dummyId = "0";
-        dummyStock.setId(dummyId);
+        String dummyTicker = "TICKER";
+        dummyStock.setId(dummyTicker);
 
-        given(stockService.getStockById(dummyId)).willReturn(Optional.of(dummyStock));
+        given(stockService.getStockById(dummyTicker)).willReturn(Optional.of(dummyStock));
 
-        String url = String.format("/api/v1/stocks/%s", dummyId);
+        String url = String.format("/api/v1/stocks/%s", dummyTicker);
         String body = mockMvc.perform(MockMvcRequestBuilders.get(url))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
@@ -66,13 +66,13 @@ public class StockControllerTest {
 
     @Test
     public void GetStock_Should_ReturnNotFound_When_DontExists() throws Exception {
-        String existingId = "0";
-        String notExistingId = "1";
-        dummyStock.setId(existingId);
+        String existingTicker = "REAL";
+        String notExistingTicker = "FAKE";
+        dummyStock.setId(existingTicker);
 
-        given(stockService.getStockById(existingId)).willReturn(Optional.of(dummyStock));
+        given(stockService.getStockById(existingTicker)).willReturn(Optional.of(dummyStock));
 
-        String url = String.format("/api/v1/stocks/%s", notExistingId);
+        String url = String.format("/api/v1/stocks/%s", notExistingTicker);
         mockMvc.perform(MockMvcRequestBuilders.get(url))
                 .andExpect(status().isNotFound());
 

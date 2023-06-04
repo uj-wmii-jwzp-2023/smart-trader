@@ -22,17 +22,11 @@ public class UserController {
         return userService.getAllUsers();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable("id") String id) {
-        Optional<User> optionalUser = userService.getUserById(id);
+    @GetMapping("/{username}")
+    public ResponseEntity<User> getUser(@PathVariable("username") String username) {
+        Optional<User> optionalUser = userService.getUserByName(username);
         return optionalUser
                 .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
-    }
-
-    @PostMapping(consumes = "application/json")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void addUser(@RequestBody User user) {
-        userService.addUser(user);
     }
 }

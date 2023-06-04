@@ -53,12 +53,12 @@ public class UserControllerTest {
 
     @Test
     public void GetUser_Should_ReturnOk_When_Exists() throws Exception {
-        String dummyId = "0";
-        dummyUser.setId(dummyId);
+        String dummyName = "name";
+        dummyUser.setName(dummyName);
 
-        given(userService.getUserById(dummyId)).willReturn(Optional.of(dummyUser));
+        given(userService.getUserByName(dummyName)).willReturn(Optional.of(dummyUser));
 
-        String url = String.format("/api/v1/users/%s", dummyId);
+        String url = String.format("/api/v1/users/%s", dummyName);
         String body = mockMvc.perform(MockMvcRequestBuilders.get(url))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
@@ -69,13 +69,13 @@ public class UserControllerTest {
 
     @Test
     public void GetUser_Should_ReturnNotFound_When_DontExists() throws Exception {
-        String existingId = "0";
-        String notExistingId = "1";
-        dummyUser.setId(existingId);
+        String existingName = "existing-name";
+        String notExistingName = "not-existing-name";
+        dummyUser.setName(existingName);
 
-        given(userService.getUserById(existingId)).willReturn(Optional.of(dummyUser));
+        given(userService.getUserByName(existingName)).willReturn(Optional.of(dummyUser));
 
-        String url = String.format("/api/v1/users/%s", notExistingId);
+        String url = String.format("/api/v1/users/%s", notExistingName);
         mockMvc.perform(MockMvcRequestBuilders.get(url))
                 .andExpect(status().isNotFound());
 

@@ -29,4 +29,6 @@ public class StockService {
     public Boolean existsByTicker(String ticker) {
         return stockRepository.existsByTicker(ticker);
     }
+
+    public Optional<Stock> getStockByTicker(String ticker) { return stockRepository.findStockByTicker(ticker); }
 }
