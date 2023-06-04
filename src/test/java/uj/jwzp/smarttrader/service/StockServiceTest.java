@@ -29,7 +29,7 @@ public class StockServiceTest {
         String ticker = "TICKER";
         String id = "0";
 
-        Stock stock = new Stock(name, ticker);
+        Stock stock = new Stock(ticker, name);
         stock.setId(id);
 
         given(stockRepository.findById(stock.getId())).willReturn(Optional.of(stock));
