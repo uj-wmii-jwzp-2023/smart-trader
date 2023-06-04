@@ -29,15 +29,4 @@ public class UserController {
                 .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
     }
-
-    @PostMapping(consumes = "application/json")
-    public ResponseEntity<String> addUser(@RequestBody User user) {
-        if (userService.existsByName(user.getName())) {
-            return new ResponseEntity<>("User with the same name is already added.", HttpStatus.BAD_REQUEST);
-        }
-
-        userService.addUser(user);
-
-        return new ResponseEntity<>("User created", HttpStatus.CREATED);
-    }
 }
