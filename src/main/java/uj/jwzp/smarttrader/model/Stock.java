@@ -2,6 +2,7 @@ package uj.jwzp.smarttrader.model;
 
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 public class Stock {
     @Id
     private String id;
+    @Indexed(unique=true)
     @NotNull(message = "Ticker field is required.")
     private String ticker;
     @NotNull(message = "Name field is required.")
