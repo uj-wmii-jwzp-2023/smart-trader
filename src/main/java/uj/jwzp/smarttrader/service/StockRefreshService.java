@@ -23,7 +23,7 @@ public class StockRefreshService {
         this.apiWrapper = apiWrapper;
     }
 
-    @Scheduled(fixedRate = 70000)
+    @Scheduled(cron = "10 */1 9-16 * * 1-5") // every 70 second, 9am-5pm, Monday-Friday
     public void updateAllStockPrices() {
         List<Stock> stocks = stockRepository.findAll();
         for (var stock : stocks) {
@@ -31,8 +31,9 @@ public class StockRefreshService {
                 BigDecimal newPrice = apiWrapper.getStockPrice(stock.getTicker());
                 stock.setPrice(newPrice);
                 stockRepository.save(stock);
+                System.out.println(stock.getTicker() + " price updated."); // log
             } catch (Exception e) {
-                System.out.println("Stock ticker not found."); // log
+                System.out.println(stock.getTicker() + " price not found."); // log
             }
         }
     }
