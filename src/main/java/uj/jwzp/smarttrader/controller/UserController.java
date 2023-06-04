@@ -22,17 +22,22 @@ public class UserController {
         return userService.getAllUsers();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable("id") String id) {
-        Optional<User> optionalUser = userService.getUserById(id);
+    @GetMapping("/{username}")
+    public ResponseEntity<User> getUser(@PathVariable("username") String username) {
+        Optional<User> optionalUser = userService.getUserByName(username);
         return optionalUser
                 .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
     }
 
     @PostMapping(consumes = "application/json")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void addUser(@RequestBody User user) {
+    public ResponseEntity<String> addUser(@RequestBody User user) {
+        if (userService.existsByName(user.getName())) {
+            return new ResponseEntity<>("User with the same name is already added.", HttpStatus.BAD_REQUEST);
+        }
+
         userService.addUser(user);
+
+        return new ResponseEntity<>("User created", HttpStatus.CREATED);
     }
 }

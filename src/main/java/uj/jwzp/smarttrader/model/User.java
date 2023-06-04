@@ -1,6 +1,7 @@
 package uj.jwzp.smarttrader.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 public class User {
     @Id
     private String id;
+    @Indexed(unique=true)
     private String name;
     private String password;
     private List<Role> roles;
