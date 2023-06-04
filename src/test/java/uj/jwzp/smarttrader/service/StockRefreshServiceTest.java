@@ -16,6 +16,8 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class StockRefreshServiceTest {
@@ -44,6 +46,7 @@ public class StockRefreshServiceTest {
 
         stockRefreshService.updateAllStockPrices();
 
+        verify(stockRepository, times(stocks.size())).save(any(Stock.class));
         Assertions.assertThat(stock.getPrice()).isEqualTo(BigDecimal.ONE);
     }
 
