@@ -9,6 +9,7 @@ name: Java CI with Gradle
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -37,7 +38,3 @@ jobs:
       with:
         name: smart-trader-artifact
         path: build/libs
-    - name: Download artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: smart-trader-artifact
