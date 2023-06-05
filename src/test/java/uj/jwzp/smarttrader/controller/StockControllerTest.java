@@ -51,9 +51,9 @@ public class StockControllerTest {
     @Test
     public void GetStock_Should_ReturnOk_When_Exists() throws Exception {
         String dummyTicker = "TICKER";
-        dummyStock.setId(dummyTicker);
+        dummyStock.setTicker(dummyTicker);
 
-        given(stockService.getStockById(dummyTicker)).willReturn(Optional.of(dummyStock));
+        given(stockService.getStockByTicker(dummyTicker)).willReturn(Optional.of(dummyStock));
 
         String url = String.format("/api/v1/stocks/%s", dummyTicker);
         String body = mockMvc.perform(MockMvcRequestBuilders.get(url))
