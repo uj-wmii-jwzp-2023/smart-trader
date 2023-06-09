@@ -11,72 +11,20 @@ import java.time.LocalDateTime;
 @Document("Order")
 public class Order {
     @Id
-    @Null(message = "Id is generated automatically.")
     private String id;
-
-    @NotNull(
-            message = "User ID is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    )
+    @NotNull(message = "User Id field is required.")
     private String userId;
-    @NotNull(
-            message = "Stock ID is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    )
+    @NotNull(message = "Stock Id field is required.")
     private String stockId;
-    @Null(
-            message = "Price is not used for market orders.",
-            groups = {Market.class}
-    )
-    @NotNull(
-            message = "Price is required.",
-            groups = {Limit.class, TimeLimit.class}
-    )
+    @NotNull(message = "Price field is required.")
     private BigDecimal price;
-    @NotNull(
-            message = "Quantity is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    )
+    @NotNull(message = "Quantity field is required.")
     private Integer quantity;
-    @NotNull(
-            message = "Order type is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    )
+    @NotNull(message = "Order Type field is required.")
     private OrderType orderType;
-    @Null(
-            message = "Cancellation time is used only in time-limit orders.",
-            groups = {Market.class, Limit.class}
-    )
-    @NotNull(
-            message = "Cancellation time is required.",
-            groups = {TimeLimit.class}
-    )
     private LocalDateTime cancellationTime;
 
-    // Different order type groups for input validation in OrderController.
-    public interface Market {}
-    public interface Limit{}
-    public interface TimeLimit {}
-
-    public Order(@NotNull(
-            message = "User ID is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    ) String userId, @NotNull(
-            message = "Stock ID is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    ) String stockId, @NotNull(
-            message = "Price is required.",
-            groups = {Limit.class, TimeLimit.class}
-    ) BigDecimal price, @NotNull(
-            message = "Quantity is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    ) Integer quantity, @NotNull(
-            message = "Order type is required.",
-            groups = {Market.class, Limit.class, TimeLimit.class}
-    ) OrderType orderType, @NotNull(
-            message = "Cancellation time is required.",
-            groups = {TimeLimit.class}
-    ) LocalDateTime cancellationTime) {
+    public Order(String userId, String stockId, BigDecimal price, Integer quantity, OrderType orderType, LocalDateTime cancellationTime) {
         this.userId = userId;
         this.stockId = stockId;
         this.price = price;
