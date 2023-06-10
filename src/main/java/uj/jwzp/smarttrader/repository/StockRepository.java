@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface StockRepository extends MongoRepository<Stock, String> {
     Boolean existsByTicker(String ticker);
     Optional<Stock> findStockByTicker(String ticker);
+    Optional<Stock> findStockById(String id);
+
 }
