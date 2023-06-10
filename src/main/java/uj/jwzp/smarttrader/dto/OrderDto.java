@@ -8,46 +8,42 @@ import uj.jwzp.smarttrader.model.OrderType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 public class OrderDto {
-    @Id
-    @Null(message = "Id is generated automatically.")
-    private String id;
-
     @Null(
             message = "Username of logged-in user is added automatically.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Market.class, uj.jwzp.smarttrader.dto.OrderDto.Limit.class, uj.jwzp.smarttrader.dto.OrderDto.TimeLimit.class}
+            groups = {Market.class, Limit.class, TimeLimit.class}
     )
     private String username;
     @NotNull(
             message = "Stock ticker is required.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Market.class, uj.jwzp.smarttrader.dto.OrderDto.Limit.class, uj.jwzp.smarttrader.dto.OrderDto.TimeLimit.class}
+            groups = {Market.class, Limit.class, TimeLimit.class}
     )
     private String ticker;
     @Null(
             message = "Price is not used for market orders.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Market.class}
+            groups = {Market.class}
     )
     @NotNull(
             message = "Price is required.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Limit.class, uj.jwzp.smarttrader.dto.OrderDto.TimeLimit.class}
+            groups = {Limit.class, TimeLimit.class}
     )
     private BigDecimal price;
     @NotNull(
             message = "Quantity is required.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Market.class, uj.jwzp.smarttrader.dto.OrderDto.Limit.class, uj.jwzp.smarttrader.dto.OrderDto.TimeLimit.class}
+            groups = {Market.class, Limit.class, TimeLimit.class}
     )
     private Integer quantity;
     @NotNull(
             message = "Order type is required.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Market.class, uj.jwzp.smarttrader.dto.OrderDto.Limit.class, uj.jwzp.smarttrader.dto.OrderDto.TimeLimit.class}
+            groups = {Market.class, Limit.class, TimeLimit.class}
     )
     private OrderType orderType;
     @Null(
             message = "Cancellation time is used only in time-limit orders.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.Market.class, uj.jwzp.smarttrader.dto.OrderDto.Limit.class}
+            groups = {Market.class, Limit.class}
     )
     @NotNull(
             message = "Cancellation time is required.",
-            groups = {uj.jwzp.smarttrader.dto.OrderDto.TimeLimit.class}
+            groups = {TimeLimit.class}
     )
     private LocalDateTime cancellationTime;
 
@@ -78,14 +74,6 @@ public class OrderDto {
         this.quantity = quantity;
         this.orderType = orderType;
         this.cancellationTime = cancellationTime;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getUsername() {
