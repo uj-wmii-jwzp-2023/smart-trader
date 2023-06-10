@@ -21,6 +21,8 @@ import uj.jwzp.smarttrader.model.Role;
 import uj.jwzp.smarttrader.model.User;
 import uj.jwzp.smarttrader.service.UserService;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 
@@ -78,6 +80,90 @@ public class UserControllerTest {
         String url = String.format("/api/v1/users/%s", notExistingName);
         mockMvc.perform(MockMvcRequestBuilders.get(url))
                 .andExpect(status().isNotFound());
-
     }
+    @Test
+    public void DepositFunds_Should_ReturnAccepted_When_CorrectDepositValue() throws Exception {
+        BigDecimal depositValue = new BigDecimal(10);
+
+        given(userService.existsByName(dummyUser.getName())).willReturn(Boolean.TRUE);
+
+        String url = String.format("/api/v1/users/%s/deposit?value=%s", dummyUser.getName(), depositValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isAccepted());
+    }
+    @Test
+    public void DepositFunds_Should_ReturnBadRequest_When_NegativeDepositValue() throws Exception {
+        BigDecimal depositValue = new BigDecimal(-10);
+
+        given(userService.existsByName(dummyUser.getName())).willReturn(Boolean.TRUE);
+
+        String url = String.format("/api/v1/users/%s/deposit?value=%s", dummyUser.getName(), depositValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isBadRequest());
+    }
+    @Test
+    public void DepositFunds_Should_ReturnNotFound_When_UserDontExist() throws Exception {
+        BigDecimal depositValue = new BigDecimal(10);
+        String notExistingName = "not-existing-name";
+
+        given(userService.existsByName(notExistingName)).willReturn(Boolean.FALSE);
+
+        String url = String.format("/api/v1/users/%s/deposit?value=%s", notExistingName, depositValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isNotFound());
+    }
+    @Test
+    public void WithdrawFunds_Should_ReturnAccepted_When_CorrectWithdrawValue() throws Exception {
+        BigDecimal withdrawValue = new BigDecimal(10);
+        dummyUser.setCashBalance(new BigDecimal(20));
+
+        given(userService.existsByName(dummyUser.getName())).willReturn(Boolean.TRUE);
+        given(userService.getUserByName(dummyUser.getName())).willReturn(Optional.of(dummyUser));
+
+        String url = String.format("/api/v1/users/%s/withdraw?value=%s", dummyUser.getName(), withdrawValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isAccepted());
+    }
+    @Test
+    public void WithdrawFunds_Should_ReturnBadRequest_When_NotEnoughFunds() throws Exception {
+        BigDecimal withdrawValue = new BigDecimal(10);
+        dummyUser.setCashBalance(new BigDecimal(5));
+
+        given(userService.existsByName(dummyUser.getName())).willReturn(Boolean.TRUE);
+        given(userService.getUserByName(dummyUser.getName())).willReturn(Optional.of(dummyUser));
+
+        String url = String.format("/api/v1/users/%s/withdraw?value=%s", dummyUser.getName(), withdrawValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void WithdrawFunds_Should_ReturnBadRequest_When_NegativeWithdrawValue() throws Exception {
+        BigDecimal withdrawValue = new BigDecimal(-10);
+        dummyUser.setCashBalance(new BigDecimal(100));
+
+        given(userService.existsByName(dummyUser.getName())).willReturn(Boolean.TRUE);
+        given(userService.getUserByName(dummyUser.getName())).willReturn(Optional.of(dummyUser));
+
+        given(userService.existsByName(dummyUser.getName())).willReturn(Boolean.TRUE);
+
+        String url = String.format("/api/v1/users/%s/withdraw?value=%s", dummyUser.getName(), withdrawValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isBadRequest());
+    }
+    @Test
+    public void WithdrawFunds_Should_ReturnNotFound_When_UserDontExist() throws Exception {
+        BigDecimal withdrawValue = new BigDecimal(10);
+        dummyUser.setCashBalance(new BigDecimal(20));
+        String notExistingName = "not-existing-name";
+
+        given(userService.getUserByName(dummyUser.getName())).willReturn(Optional.of(dummyUser));
+
+        given(userService.existsByName(notExistingName)).willReturn(Boolean.FALSE);
+
+        String url = String.format("/api/v1/users/%s/withdraw?value=%s", notExistingName, withdrawValue);
+        mockMvc.perform(MockMvcRequestBuilders.post(url))
+                .andExpect(status().isNotFound());
+    }
+
 }
