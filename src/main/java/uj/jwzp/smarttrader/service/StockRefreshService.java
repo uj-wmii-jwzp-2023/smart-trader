@@ -14,12 +14,14 @@ import java.util.List;
 @Service
 public class StockRefreshService {
     StockRepository stockRepository;
+    private final OrderService orderService;
 
     StockApiWrapper apiWrapper;
 
     @Autowired
-    public StockRefreshService(StockRepository stockRepository, StockApiWrapper apiWrapper) {
+    public StockRefreshService(StockRepository stockRepository, OrderService orderService, StockApiWrapper apiWrapper) {
         this.stockRepository = stockRepository;
+        this.orderService = orderService;
         this.apiWrapper = apiWrapper;
     }
 
@@ -36,6 +38,8 @@ public class StockRefreshService {
                 System.out.println(stock.getTicker() + " price not found."); // log
             }
         }
+
+        orderService.matchOrders();
     }
 
 }

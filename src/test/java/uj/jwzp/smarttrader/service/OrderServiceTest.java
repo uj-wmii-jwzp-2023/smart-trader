@@ -320,4 +320,25 @@ public class OrderServiceTest {
         Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
+    @Test
+    public void MatchOrders_Executes_Orders_When_Possible() {
+        List<Order> orders = new ArrayList<>(Arrays.asList(order));
+
+        given(userRepository.findUserById(user.getId())).willReturn(Optional.of(user));
+        given(stockRepository.findStockById(stock.getId())).willReturn(Optional.of(stock));
+        given(orderRepository.findAll()).willReturn(orders);
+
+        BigDecimal expectedBalance = user.getCashBalance()
+                .subtract(order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity())));
+
+        orderService.matchOrders();
+        verify(orderRepository).saveAll(List.of());
+
+
+        Assertions.assertThat(user.getAssets())
+                .usingRecursiveComparison()
+                .isEqualTo(List.of(new Asset(stock.getId(), order.getQuantity())));
+        Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+    }
+
 }

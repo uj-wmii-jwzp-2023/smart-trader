@@ -204,10 +204,31 @@ public class OrderService {
     public void matchOrders() {
         var orders = orderRepository.findAll();
 
+        List<Order> toRemove = new ArrayList<>();
         for (var order : orders) {
+            if (order.getOrderType() == OrderType.TIME_LIMIT
+                    && order.getCancellationTime().isAfter(LocalDateTime.now(clock))) {
+                toRemove.add(order);
+                continue;
+            }
 
+            String userId = order.getUserId();
+            String stockId = order.getStockId();
+            Optional<User> optionalUser = userRepository.findUserById(userId);
+            Optional<Stock> optionalStock = stockRepository.findStockById(stockId);
+
+            var errors = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
+            if (!errors.isEmpty()) {
+                continue;
+            }
+
+            if (executeOrder(order, optionalUser, optionalStock)) {
+                toRemove.add(order);
+            }
         }
 
+        orders.removeAll(toRemove);
+        orderRepository.saveAll(orders);
     }
 
     public List<Order> getAllOrders() {
