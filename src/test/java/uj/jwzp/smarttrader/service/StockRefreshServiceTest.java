@@ -24,6 +24,8 @@ public class StockRefreshServiceTest {
 
     @Mock
     StockRepository stockRepository;
+    @Mock
+    OrderService orderService;
 
     @Mock
     StockApiWrapper apiWrapper;
