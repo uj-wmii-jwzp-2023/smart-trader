@@ -27,7 +27,7 @@ public class OrderService {
         this.clock = clock;
     }
 
-    private List<String> validateNewOrder(Order order) {
+    public List<String> validateNewOrder(Order order) {
         List<String> errors = new ArrayList<>();
 
         if (order.getOrderType() != OrderType.MARKET && order.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
@@ -43,7 +43,7 @@ public class OrderService {
         return errors;
     }
 
-    private List<String> validateOrderBeforeExecuting(Order order, Optional<User> optionalUser, Optional<Stock> optionalStock) {
+    public List<String> validateOrderBeforeExecuting(Order order, Optional<User> optionalUser, Optional<Stock> optionalStock) {
         List<String> errors = new ArrayList<>();
 
         if (optionalUser.isEmpty()) {
@@ -71,17 +71,19 @@ public class OrderService {
         return errors;
     }
 
-    private List<String> validateSellOrder(Order order, User user, Stock stock) {
+    public List<String> validateSellOrder(Order order, User user, Stock stock) {
         List<String> errors = new ArrayList<>();
 
-        if (order.getQuantity() > user.getAssets().stream().filter(asset -> asset.stockId.equals(stock.getId())).count()) {
-            errors.add("Quantity should be smaller or equal to the amount of stock that user owns");
+        if (user.getAssets().stream().noneMatch(asset -> asset.stockId.equals(stock.getId()))
+                || order.getQuantity() > user.getAssets().stream()
+                .filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity) {
+            errors.add("Order quantity should be smaller or equal to the amount of stock that user owns");
         }
 
         return errors;
     }
 
-    private List<String> validateBuyOrder(Order order, User user, Stock stock) {
+    public List<String> validateBuyOrder(Order order, User user, Stock stock) {
         List<String> errors = new ArrayList<>();
 
         BigDecimal totalPrice;
@@ -132,11 +134,70 @@ public class OrderService {
         return executeBuyOrder(order, user, stock);
     }
 
-    private boolean executeSellOrder(Order order, User user, Stock stock) {
+    public boolean executeSellOrder(Order order, User user, Stock stock) {
+        BigDecimal totalPrice;
+        if (order.getOrderType() == OrderType.MARKET) {
+            totalPrice = stock.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        } else {
+            if (stock.getPrice().compareTo(order.getPrice()) < 0) {
+                return false;
+            }
+            totalPrice = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        }
+
+        BigDecimal newBalance = user.getCashBalance().add(totalPrice);
+        user.setCashBalance(newBalance);
+
+        var userAssets = user.getAssets();
+        Optional<Asset> optionalAsset = userAssets.stream()
+                .filter(asset -> asset.stockId.equals(stock.getId()))
+                .findFirst();
+
+        if (optionalAsset.isEmpty()) {
+            throw new RuntimeException("User does not have required asset");
+        }
+
+        Asset asset = optionalAsset.get();
+        asset.quantity -= order.getQuantity();
+
+        if (asset.quantity < 0) {
+            throw new RuntimeException("Negative asset quantity");
+        }
+
+        userAssets.removeIf(a -> a.quantity == 0);
+
         return true;
     }
 
-    private boolean executeBuyOrder(Order order, User user, Stock stock) {
+    public boolean executeBuyOrder(Order order, User user, Stock stock) {
+        BigDecimal totalPrice;
+        if (order.getOrderType() == OrderType.MARKET) {
+            totalPrice = stock.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        } else {
+            if (stock.getPrice().compareTo(order.getPrice()) > 0) {
+                return false;
+            }
+            totalPrice = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        }
+
+        BigDecimal newBalance = user.getCashBalance().subtract(totalPrice);
+        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Negative user cash balance");
+        }
+        user.setCashBalance(newBalance);
+
+        var userAssets = user.getAssets();
+        Optional<Asset> optionalAsset = userAssets.stream()
+                .filter(asset -> asset.stockId.equals(stock.getId()))
+                .findFirst();
+
+        if (optionalAsset.isPresent()) {
+            Asset asset = optionalAsset.get();
+            asset.quantity += order.getQuantity();
+        } else {
+            userAssets.add(new Asset(stock.getId(), order.getQuantity()));
+        }
+
         return true;
     }
 

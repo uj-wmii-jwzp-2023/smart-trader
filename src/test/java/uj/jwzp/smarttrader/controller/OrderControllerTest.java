@@ -19,10 +19,12 @@ import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.model.OrderSide;
 import uj.jwzp.smarttrader.model.OrderType;
+import uj.jwzp.smarttrader.model.OrderValidationResponse;
 import uj.jwzp.smarttrader.service.OrderService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -57,7 +59,7 @@ public class OrderControllerTest {
         BigDecimal price = new BigDecimal(5);
         Integer quantity = 10;
         OrderSide orderSide = OrderSide.BUY;
-        OrderType orderType = OrderType.LIMIT;
+        OrderType orderType = null;
         LocalDateTime cancellationTime = LocalDateTime.MAX;
 
         dummyOrder = new Order(userId, stockId, price, quantity, orderSide, orderType, cancellationTime);
@@ -193,6 +195,7 @@ public class OrderControllerTest {
 
         testedOrderDto.setUsername(dummyName);
         given(orderMapper.toEntity(refEq(testedOrderDto, "orderType"))).willReturn(testedOrder);
+        given(orderService.addOrder(any())).willReturn(new OrderValidationResponse(true, new ArrayList<>()));
 
         String url = String.format("/api/v1/users/%s/orders/%s", dummyName, orderType);
 
