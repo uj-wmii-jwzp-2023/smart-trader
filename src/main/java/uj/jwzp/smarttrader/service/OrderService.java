@@ -84,7 +84,12 @@ public class OrderService {
     private List<String> validateBuyOrder(Order order, User user, Stock stock) {
         List<String> errors = new ArrayList<>();
 
-        BigDecimal totalPrice = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        BigDecimal totalPrice;
+        if (order.getOrderType() == OrderType.MARKET) {
+            totalPrice = stock.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        } else {
+            totalPrice = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        }
         if (totalPrice.compareTo(user.getCashBalance()) > 0) {
             errors.add("Total price should be smaller or equal to user cash balance");
         }
