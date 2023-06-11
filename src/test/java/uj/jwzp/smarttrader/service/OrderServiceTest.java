@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uj.jwzp.smarttrader.model.Order;
+import uj.jwzp.smarttrader.model.OrderSide;
 import uj.jwzp.smarttrader.model.OrderType;
 import uj.jwzp.smarttrader.repository.OrderRepository;
 
@@ -30,10 +31,11 @@ public class OrderServiceTest {
         String stockId = "2";
         BigDecimal price = new BigDecimal(10);
         Integer quantity = 10;
-        OrderType orderType = OrderType.BUY;
+        OrderSide orderSide = OrderSide.BUY;
+        OrderType orderType = OrderType.LIMIT;
         LocalDateTime cancellationTime = null;
 
-        Order order = new Order(userId, stockId, price, quantity, orderType, cancellationTime);
+        Order order = new Order(userId, stockId, price, quantity, orderSide, orderType, cancellationTime);
         String orderId = "0";
         order.setId(orderId);
 

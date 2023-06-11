@@ -1,5 +1,5 @@
 package uj.jwzp.smarttrader.model;
 
 public enum OrderType {
-    BUY, SELL
+    MARKET, LIMIT, TIME_LIMIT
 }

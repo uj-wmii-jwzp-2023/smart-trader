@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -18,6 +17,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import uj.jwzp.smarttrader.dto.OrderDto;
 import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
+import uj.jwzp.smarttrader.model.OrderSide;
 import uj.jwzp.smarttrader.model.OrderType;
 import uj.jwzp.smarttrader.service.OrderService;
 
@@ -30,7 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers=OrderController.class)
+@WebMvcTest(controllers = OrderController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
 public class OrderControllerTest {
@@ -56,15 +56,16 @@ public class OrderControllerTest {
         String stockId = "2";
         BigDecimal price = new BigDecimal(5);
         Integer quantity = 10;
-        OrderType orderType = OrderType.BUY;
+        OrderSide orderSide = OrderSide.BUY;
+        OrderType orderType = OrderType.LIMIT;
         LocalDateTime cancellationTime = LocalDateTime.MAX;
 
-        dummyOrder = new Order(userId, stockId, price, quantity, orderType, cancellationTime);
+        dummyOrder = new Order(userId, stockId, price, quantity, orderSide, orderType, cancellationTime);
 
         String ticker = "TICKER";
         String username = null;
 
-        dummyOrderDto = new OrderDto(username, ticker, price, quantity, orderType, cancellationTime);
+        dummyOrderDto = new OrderDto(username, ticker, price, quantity, orderSide, orderType, cancellationTime);
     }
 
     @Test
@@ -138,11 +139,11 @@ public class OrderControllerTest {
     }
 
     @Test
-    public void AddMarketOrder_Should_ReturnBadRequest_When_MissingOrderType() throws Exception {
+    public void AddMarketOrder_Should_ReturnBadRequest_When_MissingOrderSide() throws Exception {
         dummyOrderDto.setPrice(null);
         dummyOrderDto.setCancellationTime(null);
 
-        dummyOrderDto.setOrderType(null);
+        dummyOrderDto.setOrderSide(null);
         expectThatPassedOrderDtoArgsAreNotValid(dummyOrderDto, dummyOrder, "market");
     }
 
@@ -185,13 +186,13 @@ public class OrderControllerTest {
         expectThatPassedOrderDtoArgsAreNotValid(dummyOrderDto, dummyOrder, "time-limit");
     }
 
-    private void expectThatPassedOrderDtoArgsAreValid(OrderDto testedOrderDto, Order testedOrder, String orderType) throws Exception{
+    private void expectThatPassedOrderDtoArgsAreValid(OrderDto testedOrderDto, Order testedOrder, String orderType) throws Exception {
         String dummyName = "Username";
         testedOrderDto.setUsername(null);
         String requestBody = objectMapper.writeValueAsString(testedOrderDto);
 
         testedOrderDto.setUsername(dummyName);
-        given(orderMapper.toEntity(refEq(testedOrderDto, "id"))).willReturn(testedOrder);
+        given(orderMapper.toEntity(refEq(testedOrderDto, "orderType"))).willReturn(testedOrder);
 
         String url = String.format("/api/v1/users/%s/orders/%s", dummyName, orderType);
 
@@ -204,12 +205,13 @@ public class OrderControllerTest {
 
         verify(orderService).addOrder(any(Order.class));
     }
-    private void expectThatPassedOrderDtoArgsAreNotValid(OrderDto testedOrderDto, Order testedOrder, String orderType) throws Exception{
+
+    private void expectThatPassedOrderDtoArgsAreNotValid(OrderDto testedOrderDto, Order testedOrder, String orderType) throws Exception {
         String requestBody = objectMapper.writeValueAsString(testedOrderDto);
 
         String dummyName = "Username";
         testedOrderDto.setUsername(dummyName);
-        given(orderMapper.toEntity(refEq(testedOrderDto, "id"))).willReturn(testedOrder);
+        given(orderMapper.toEntity(refEq(testedOrderDto, "orderType"))).willReturn(testedOrder);
 
         String url = String.format("/api/v1/users/%s/orders/%s", dummyName, orderType);
 

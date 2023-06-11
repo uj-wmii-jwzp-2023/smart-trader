@@ -2,11 +2,12 @@ package uj.jwzp.smarttrader.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
-import org.springframework.data.annotation.Id;
+import uj.jwzp.smarttrader.model.OrderSide;
 import uj.jwzp.smarttrader.model.OrderType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 public class OrderDto {
     @Null(
             message = "Username of logged-in user is added automatically.",
@@ -36,7 +37,7 @@ public class OrderDto {
             message = "Order type is required.",
             groups = {Market.class, Limit.class, TimeLimit.class}
     )
-    private OrderType orderType;
+    private OrderSide orderSide;
     @Null(
             message = "Cancellation time is used only in time-limit orders.",
             groups = {Market.class, Limit.class}
@@ -46,11 +47,17 @@ public class OrderDto {
             groups = {TimeLimit.class}
     )
     private LocalDateTime cancellationTime;
+    private OrderType orderType;
 
     // Different order type groups for input validation in OrderController.
-    public interface Market {}
-    public interface Limit{}
-    public interface TimeLimit {}
+    public interface Market {
+    }
+
+    public interface Limit {
+    }
+
+    public interface TimeLimit {
+    }
 
     public OrderDto(String username, @NotNull(
             message = "Stock ticker is required.",
@@ -64,7 +71,7 @@ public class OrderDto {
     ) Integer quantity, @NotNull(
             message = "Order type is required.",
             groups = {Market.class, Limit.class, TimeLimit.class}
-    ) OrderType orderType, @NotNull(
+    ) OrderSide orderSide, OrderType orderType, @NotNull(
             message = "Cancellation time is required.",
             groups = {TimeLimit.class}
     ) LocalDateTime cancellationTime) {
@@ -72,8 +79,9 @@ public class OrderDto {
         this.ticker = ticker;
         this.price = price;
         this.quantity = quantity;
-        this.orderType = orderType;
+        this.orderSide = orderSide;
         this.cancellationTime = cancellationTime;
+        this.orderType = orderType;
     }
 
     public String getUsername() {
@@ -108,13 +116,6 @@ public class OrderDto {
         this.quantity = quantity;
     }
 
-    public OrderType getOrderType() {
-        return orderType;
-    }
-
-    public void setOrderType(OrderType orderType) {
-        this.orderType = orderType;
-    }
 
     public LocalDateTime getCancellationTime() {
         return cancellationTime;
@@ -122,5 +123,21 @@ public class OrderDto {
 
     public void setCancellationTime(LocalDateTime cancellationTime) {
         this.cancellationTime = cancellationTime;
+    }
+
+    public OrderSide getOrderSide() {
+        return orderSide;
+    }
+
+    public void setOrderSide(OrderSide orderSide) {
+        this.orderSide = orderSide;
+    }
+
+    public OrderType getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(OrderType orderType) {
+        this.orderType = orderType;
     }
 }
