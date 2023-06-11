@@ -34,7 +34,7 @@ public class OrderDto {
     )
     private Integer quantity;
     @NotNull(
-            message = "Order type is required.",
+            message = "Order side is required.",
             groups = {Market.class, Limit.class, TimeLimit.class}
     )
     private OrderSide orderSide;
@@ -47,6 +47,10 @@ public class OrderDto {
             groups = {TimeLimit.class}
     )
     private LocalDateTime cancellationTime;
+    @Null(
+            message = "Order type is added automatically.",
+            groups = {Market.class, Limit.class, TimeLimit.class}
+    )
     private OrderType orderType;
 
     // Different order type groups for input validation in OrderController.
@@ -69,7 +73,7 @@ public class OrderDto {
             message = "Quantity is required.",
             groups = {Market.class, Limit.class, TimeLimit.class}
     ) Integer quantity, @NotNull(
-            message = "Order type is required.",
+            message = "Order side is required.",
             groups = {Market.class, Limit.class, TimeLimit.class}
     ) OrderSide orderSide, OrderType orderType, @NotNull(
             message = "Cancellation time is required.",

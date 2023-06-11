@@ -9,6 +9,7 @@ import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.dto.OrderDto;
 import uj.jwzp.smarttrader.model.OrderType;
+import uj.jwzp.smarttrader.model.OrderValidationResponse;
 import uj.jwzp.smarttrader.service.OrderService;
 
 import java.util.List;
@@ -46,9 +47,13 @@ public class OrderController {
                                                  @PathVariable("username") String username) {
         orderDto.setUsername(username);
         orderDto.setOrderType(OrderType.MARKET);
-        orderService.addOrder(orderMapper.toEntity(orderDto));
+        var validationResponse = orderService.addOrder(orderMapper.toEntity(orderDto));
 
-        return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getErrors()), HttpStatus.BAD_REQUEST);
+
     }
 
     @PostMapping(value = "/limit", consumes = "application/json")
@@ -57,9 +62,12 @@ public class OrderController {
                                                 @PathVariable("username") String username) {
         orderDto.setUsername(username);
         orderDto.setOrderType(OrderType.LIMIT);
-        orderService.addOrder(orderMapper.toEntity(orderDto));
+        var validationResponse = orderService.addOrder(orderMapper.toEntity(orderDto));
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getErrors()), HttpStatus.BAD_REQUEST);
 
-        return new ResponseEntity<>("Order created", HttpStatus.CREATED);
     }
 
     @PostMapping(value = "/time-limit", consumes = "application/json")
@@ -68,8 +76,12 @@ public class OrderController {
                                                     @PathVariable("username") String username) {
         orderDto.setUsername(username);
         orderDto.setOrderType(OrderType.TIME_LIMIT);
-        orderService.addOrder(orderMapper.toEntity(orderDto));
+        var validationResponse = orderService.addOrder(orderMapper.toEntity(orderDto));
 
-        return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getErrors()), HttpStatus.BAD_REQUEST);
+
     }
 }
