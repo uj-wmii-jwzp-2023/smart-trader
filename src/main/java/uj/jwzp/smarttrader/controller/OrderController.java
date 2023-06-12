@@ -9,7 +9,6 @@ import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.dto.OrderDto;
 import uj.jwzp.smarttrader.model.OrderType;
-import uj.jwzp.smarttrader.model.OrderValidationResponse;
 import uj.jwzp.smarttrader.service.OrderService;
 
 import java.util.List;
@@ -52,7 +51,7 @@ public class OrderController {
         if (validationResponse.isValid()) {
             return new ResponseEntity<>("Order created", HttpStatus.CREATED);
         }
-        return new ResponseEntity<>(String.join(" ", validationResponse.getErrors()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
 
     }
 
@@ -66,7 +65,7 @@ public class OrderController {
         if (validationResponse.isValid()) {
             return new ResponseEntity<>("Order created", HttpStatus.CREATED);
         }
-        return new ResponseEntity<>(String.join(" ", validationResponse.getErrors()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
 
     }
 
@@ -81,7 +80,7 @@ public class OrderController {
         if (validationResponse.isValid()) {
             return new ResponseEntity<>("Order created", HttpStatus.CREATED);
         }
-        return new ResponseEntity<>(String.join(" ", validationResponse.getErrors()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
 
     }
 }

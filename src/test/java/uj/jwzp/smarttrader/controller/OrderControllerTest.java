@@ -19,7 +19,7 @@ import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.model.OrderSide;
 import uj.jwzp.smarttrader.model.OrderType;
-import uj.jwzp.smarttrader.model.OrderValidationResponse;
+import uj.jwzp.smarttrader.model.ValidationResponse;
 import uj.jwzp.smarttrader.service.OrderService;
 
 import java.math.BigDecimal;
@@ -195,7 +195,7 @@ public class OrderControllerTest {
 
         testedOrderDto.setUsername(dummyName);
         given(orderMapper.toEntity(refEq(testedOrderDto, "orderType"))).willReturn(testedOrder);
-        given(orderService.addOrder(any())).willReturn(new OrderValidationResponse(true, new ArrayList<>()));
+        given(orderService.addOrder(any())).willReturn(new ValidationResponse(new ArrayList<>()));
 
         String url = String.format("/api/v1/users/%s/orders/%s", dummyName, orderType);
 

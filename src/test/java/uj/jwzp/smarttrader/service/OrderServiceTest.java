@@ -197,9 +197,9 @@ public class OrderServiceTest {
         order.setPrice(BigDecimal.valueOf(-10));
         order.setQuantity(-4);
 
-        var errors = orderService.validateNewOrder(order);
+        var validationResponse = orderService.validateNewOrder(order);
 
-        Assertions.assertThat(errors.size()).isEqualTo(2);
+        Assertions.assertThat(validationResponse.getMessages().size()).isEqualTo(2);
     }
 
     @Test
@@ -210,9 +210,9 @@ public class OrderServiceTest {
         order.setPrice(BigDecimal.valueOf(100));
         order.setQuantity(10);
 
-        var errors = orderService.validateNewOrder(order);
+        var validationResponse = orderService.validateNewOrder(order);
 
-        Assertions.assertThat(errors).isEmpty();
+        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
     }
 
 
@@ -222,9 +222,9 @@ public class OrderServiceTest {
         order.setQuantity(2);
         user.setAssets(new ArrayList<>(Arrays.asList(new Asset(stock.getId(), 10))));
 
-        var errors = orderService.validateSellOrder(order, user, stock);
+        var validationResponse = orderService.validateSellOrder(order, user, stock);
 
-        Assertions.assertThat(errors).isEmpty();
+        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
     }
 
     @Test
@@ -232,15 +232,15 @@ public class OrderServiceTest {
         order.setQuantity(20);
         user.setAssets(new ArrayList<>(Arrays.asList(new Asset(stock.getId(), 10))));
 
-        var errors = orderService.validateSellOrder(order, user, stock);
+        var validationResponse = orderService.validateSellOrder(order, user, stock);
 
-        Assertions.assertThat(errors.size()).isEqualTo(1);
+        Assertions.assertThat(validationResponse.getMessages().size()).isEqualTo(1);
     }
 
     @Test
     public void ValidateBuyOrder_Returns_Empty_List_When_Valid_Balance() {
-        var errors = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(errors).isEmpty();
+        var validationResponse = orderService.validateBuyOrder(order, user, stock);
+        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
     }
 
     @Test
@@ -249,8 +249,8 @@ public class OrderServiceTest {
         order.setPrice(BigDecimal.valueOf(10));
         order.setQuantity(2);
 
-        var errors = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(errors).isNotEmpty();
+        var validationResponse = orderService.validateBuyOrder(order, user, stock);
+        Assertions.assertThat(validationResponse.getMessages()).isNotEmpty();
     }
 
     @Test
@@ -259,8 +259,8 @@ public class OrderServiceTest {
         user.setCashBalance(BigDecimal.valueOf(10));
         stock.setPrice(BigDecimal.valueOf(10));
         order.setQuantity(1);
-        var errors = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(errors).isEmpty();
+        var validationResponse = orderService.validateBuyOrder(order, user, stock);
+        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
     }
 
 
@@ -271,8 +271,8 @@ public class OrderServiceTest {
         stock.setPrice(BigDecimal.valueOf(10));
         order.setQuantity(2);
 
-        var errors = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(errors).isNotEmpty();
+        var validationResponse = orderService.validateBuyOrder(order, user, stock);
+        Assertions.assertThat(validationResponse.getMessages()).isNotEmpty();
     }
 
 

@@ -27,64 +27,60 @@ public class OrderService {
         this.clock = clock;
     }
 
-    public List<String> validateNewOrder(Order order) {
-        List<String> errors = new ArrayList<>();
+    public ValidationResponse validateNewOrder(Order order) {
+        ValidationResponse validationResponse = new ValidationResponse();
 
         if (order.getOrderType() != OrderType.MARKET && order.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            errors.add("Price should be a positive value.");
+            validationResponse.addMessage("Price should be a positive value.");
         }
         if (order.getQuantity() <= 0) {
-            errors.add("Quantity should be a positive value.");
+            validationResponse.addMessage("Quantity should be a positive value.");
         }
         if (order.getCancellationTime() != null && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
-            errors.add("Cancellation time should be a future date.");
+            validationResponse.addMessage("Cancellation time should be a future date.");
         }
 
-        return errors;
+        return validationResponse;
     }
 
-    public List<String> validateOrderBeforeExecuting(Order order, Optional<User> optionalUser, Optional<Stock> optionalStock) {
-        List<String> errors = new ArrayList<>();
+    public ValidationResponse validateOrderBeforeExecuting(Order order, Optional<User> optionalUser, Optional<Stock> optionalStock) {
+        ValidationResponse validationResponse = new ValidationResponse();
 
         if (optionalUser.isEmpty()) {
-            errors.add("User does not exist.");
+            validationResponse.addMessage("User does not exist.");
         }
         if (optionalStock.isEmpty()) {
-            errors.add("Invalid stock ticker.");
+            validationResponse.addMessage("Invalid stock ticker.");
         }
 
-        if (!errors.isEmpty()) {
-            return errors;
+        if (!validationResponse.isValid()) {
+            return validationResponse;
         }
 
         User user = optionalUser.get();
         Stock stock = optionalStock.get();
 
         if (order.getOrderSide() == OrderSide.SELL) {
-            errors.addAll(validateSellOrder(order, user, stock));
+            return validateSellOrder(order, user, stock);
         }
 
-        if (order.getOrderSide() == OrderSide.BUY) {
-            errors.addAll(validateBuyOrder(order, user, stock));
-        }
-
-        return errors;
+        return validateBuyOrder(order, user, stock);
     }
 
-    public List<String> validateSellOrder(Order order, User user, Stock stock) {
-        List<String> errors = new ArrayList<>();
+    public ValidationResponse validateSellOrder(Order order, User user, Stock stock) {
+        ValidationResponse validationResponse = new ValidationResponse();
 
-        if (user.getAssets().stream().noneMatch(asset -> asset.stockId.equals(stock.getId()))
-                || order.getQuantity() > user.getAssets().stream()
-                .filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity) {
-            errors.add("Order quantity should be smaller or equal to the amount of stock that user owns");
+        boolean userDoesNotHaveRequiredStock = user.getAssets().stream().noneMatch(asset -> asset.stockId.equals(stock.getId()));
+        boolean userDoesNotHaveEnoughStockQuantity = order.getQuantity() > user.getAssets().stream().filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity;
+        if (userDoesNotHaveRequiredStock || userDoesNotHaveEnoughStockQuantity) {
+            validationResponse.addMessage("Order quantity should be smaller or equal to the amount of stock that user owns");
         }
 
-        return errors;
+        return validationResponse;
     }
 
-    public List<String> validateBuyOrder(Order order, User user, Stock stock) {
-        List<String> errors = new ArrayList<>();
+    public ValidationResponse validateBuyOrder(Order order, User user, Stock stock) {
+        ValidationResponse validationResponse = new ValidationResponse();
 
         BigDecimal totalPrice;
         if (order.getOrderType() == OrderType.MARKET) {
@@ -92,17 +88,18 @@ public class OrderService {
         } else {
             totalPrice = order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
         }
+
         if (totalPrice.compareTo(user.getCashBalance()) > 0) {
-            errors.add("Total price should be smaller or equal to user cash balance");
+            validationResponse.addMessage("Total price should be smaller or equal to user cash balance");
         }
 
-        return errors;
+        return validationResponse;
     }
 
-    public OrderValidationResponse addOrder(Order order) {
-        var errors = validateNewOrder(order);
-        if (!errors.isEmpty()) {
-            return new OrderValidationResponse(false, errors);
+    public ValidationResponse addOrder(Order order) {
+        var validationResponse = validateNewOrder(order);
+        if (!validationResponse.isValid()) {
+            return validationResponse;
         }
 
         String userId = order.getUserId();
@@ -110,9 +107,9 @@ public class OrderService {
         Optional<User> optionalUser = userRepository.findUserById(userId);
         Optional<Stock> optionalStock = stockRepository.findStockById(stockId);
 
-        errors = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
-        if (!errors.isEmpty()) {
-            return new OrderValidationResponse(false, errors);
+        validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
+        if (!validationResponse.isValid()) {
+            return validationResponse;
         }
 
         boolean realised = executeOrder(order, optionalUser, optionalStock);
@@ -121,7 +118,7 @@ public class OrderService {
             orderRepository.save(order);
         }
 
-        return new OrderValidationResponse(true, new ArrayList<>());
+        return new ValidationResponse(new ArrayList<>());
     }
 
     public boolean executeOrder(Order order, Optional<User> optionalUser, Optional<Stock> optionalStock) {
@@ -217,12 +214,13 @@ public class OrderService {
             Optional<User> optionalUser = userRepository.findUserById(userId);
             Optional<Stock> optionalStock = stockRepository.findStockById(stockId);
 
-            var errors = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
-            if (!errors.isEmpty()) {
+            var validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
+            if (!validationResponse.isValid()) {
                 continue;
             }
 
-            if (executeOrder(order, optionalUser, optionalStock)) {
+            boolean isExecuted = executeOrder(order, optionalUser, optionalStock);
+            if (isExecuted) {
                 toRemove.add(order);
             }
         }

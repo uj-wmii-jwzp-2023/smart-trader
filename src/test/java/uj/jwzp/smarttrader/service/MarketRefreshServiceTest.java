@@ -20,7 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class StockRefreshServiceTest {
+public class MarketRefreshServiceTest {
 
     @Mock
     StockRepository stockRepository;
@@ -31,7 +31,7 @@ public class StockRefreshServiceTest {
     StockApiWrapper apiWrapper;
 
     @InjectMocks
-    StockRefreshService stockRefreshService;
+    MarketRefreshService marketRefreshService;
 
     @Test
     void UpdateAllStockPrices_Should_Update_Stock_Prices() throws Exception {
@@ -46,7 +46,7 @@ public class StockRefreshServiceTest {
         given(apiWrapper.getStockPrice(anyString())).willReturn(BigDecimal.ONE);
         given(stockRepository.findAll()).willReturn(stocks);
 
-        stockRefreshService.updateAllStockPrices();
+        marketRefreshService.updateAllStockPrices();
 
         verify(stockRepository, times(stocks.size())).save(any(Stock.class));
         Assertions.assertThat(stock.getPrice()).isEqualTo(BigDecimal.ONE);
