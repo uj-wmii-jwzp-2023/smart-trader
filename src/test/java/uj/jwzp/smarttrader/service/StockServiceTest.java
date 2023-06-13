@@ -10,6 +10,7 @@ import uj.jwzp.smarttrader.model.Role;
 import uj.jwzp.smarttrader.model.Stock;
 import uj.jwzp.smarttrader.repository.StockRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,8 +29,9 @@ public class StockServiceTest {
         String name = "Company Name";
         String ticker = "TICKER";
         String id = "0";
+        BigDecimal price = BigDecimal.ZERO;
 
-        Stock stock = new Stock(ticker, name);
+        Stock stock = new Stock(ticker, name, price);
         stock.setId(id);
 
         given(stockRepository.findById(stock.getId())).willReturn(Optional.of(stock));

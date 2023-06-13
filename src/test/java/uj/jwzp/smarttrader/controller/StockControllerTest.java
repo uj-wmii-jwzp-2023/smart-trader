@@ -9,15 +9,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import uj.jwzp.smarttrader.dto.PatchStockDto;
 import uj.jwzp.smarttrader.model.Stock;
+import uj.jwzp.smarttrader.service.OrderService;
 import uj.jwzp.smarttrader.service.StockService;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -25,7 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers=StockController.class)
+@WebMvcTest(controllers = StockController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
 public class StockControllerTest {
@@ -35,6 +37,9 @@ public class StockControllerTest {
     @MockBean
     private StockService stockService;
 
+    @MockBean
+    private OrderService orderService;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -42,10 +47,13 @@ public class StockControllerTest {
 
     @BeforeEach
     public void setup() {
+        String stockId = "ID";
         String name = "Dummy Name";
         String ticker = "DUMMY";
+        BigDecimal price = BigDecimal.ONE;
 
-        dummyStock = new Stock(name, ticker);
+        dummyStock = new Stock(name, ticker, price);
+        dummyStock.setId(stockId);
     }
 
     @Test
@@ -83,11 +91,11 @@ public class StockControllerTest {
         String requestBody = objectMapper.writeValueAsString(dummyStock);
 
         mockMvc.perform(MockMvcRequestBuilders
-                .post("/api/v1/stocks")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-            )
-            .andExpect(MockMvcResultMatchers.status().isCreated());
+                        .post("/api/v1/stocks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody)
+                )
+                .andExpect(MockMvcResultMatchers.status().isCreated());
 
         verify(stockService).addStock(any(Stock.class));
     }
@@ -136,5 +144,57 @@ public class StockControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
 
         verify(stockService, never()).addStock(any(Stock.class));
+    }
+
+    @Test
+    public void UpdateStock_Should_Return_Ok_When_Stock_Exists() throws Exception {
+        String newName = "new-name";
+        String newTicker = "new-ticker";
+        PatchStockDto patchStockDto = new PatchStockDto(newTicker, newName);
+
+        given(stockService.existsById(dummyStock.getId())).willReturn(Boolean.TRUE);
+        given(stockService.existsByTicker(newTicker)).willReturn(Boolean.FALSE);
+
+        String requestBody = objectMapper.writeValueAsString(patchStockDto);
+        String url = String.format("/api/v1/stocks/%s", dummyStock.getId());
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+
+        verify(stockService).updateStock(eq(dummyStock.getId()), any());
+    }
+
+    @Test
+    public void DeleteStock_Should_Return_Ok_When_Stock_Exists() throws Exception {
+        given(stockService.existsById(dummyStock.getId())).willReturn(Boolean.TRUE);
+
+        String url = String.format("/api/v1/stocks/%s", dummyStock.getId());
+        mockMvc.perform(MockMvcRequestBuilders.delete(url))
+                .andExpect(status().isOk());
+
+        verify(stockService).deleteById(dummyStock.getId());
+    }
+
+    @Test
+    public void DeleteStock_Should_Return_NotFound_When_Stock_Does_Not_Exist() throws Exception {
+        given(stockService.existsById(dummyStock.getId())).willReturn(Boolean.FALSE);
+
+        String url = String.format("/api/v1/stocks/%s", dummyStock.getId());
+        mockMvc.perform(MockMvcRequestBuilders.delete(url))
+                .andExpect(status().isNotFound());
+
+        verify(stockService, never()).deleteById(any());
+    }
+
+    @Test
+    public void GetOrderBook_Return_NotFound_When_Stock_Does_Not_Exist() throws Exception {
+        given(stockService.existsById(dummyStock.getTicker())).willReturn(Boolean.FALSE);
+
+        String url = String.format("/api/v1/stocks/%s/order-book", dummyStock.getTicker());
+        mockMvc.perform(MockMvcRequestBuilders.get(url))
+                .andExpect(status().isNotFound());
+
+        verify(orderService, never()).getOrderBook(any());
     }
 }

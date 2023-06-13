@@ -3,6 +3,7 @@ package uj.jwzp.smarttrader.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -29,10 +30,10 @@ public class SecurityConfig {
                 .headers().frameOptions().disable()
                 .and()
                 .authorizeHttpRequests()
-//                .requestMatchers(HttpMethod.GET).permitAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/stocks/**").permitAll()
+                .requestMatchers("/api/v1/stocks/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
-//                .anyRequest().permitAll()
                 .and()
                 .httpBasic();
         return http.build();

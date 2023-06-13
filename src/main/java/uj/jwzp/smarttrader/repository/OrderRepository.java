@@ -9,5 +9,7 @@ import java.util.List;
 public interface OrderRepository extends MongoRepository<Order, String> {
     List<Order> findAllByUserId(String userId);
 
+    List<Order> findAllByStockId(String stockId);
+
     boolean existsById(@NotNull String stockId);
 }

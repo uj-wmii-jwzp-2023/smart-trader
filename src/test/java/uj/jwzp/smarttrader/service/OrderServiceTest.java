@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uj.jwzp.smarttrader.dto.OrderBookDto;
 import uj.jwzp.smarttrader.dto.PatchOrderDto;
 import uj.jwzp.smarttrader.model.*;
 import uj.jwzp.smarttrader.repository.OrderRepository;
@@ -64,7 +65,7 @@ public class OrderServiceTest {
 
         String name = "Dummy Name";
         String ticker = "DUMMY";
-        stock = new Stock(name, ticker);
+        stock = new Stock(name, ticker, BigDecimal.ZERO);
         stock.setId(stockId);
         stock.setPrice(BigDecimal.valueOf(15));
     }
@@ -360,7 +361,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    public void UpdateOrder_Saves_Order_When_Valid_Parameters() {
+    public void UpdateOrder_Executes_Order_When_Valid_Parameters() {
         BigDecimal newPrice = BigDecimal.valueOf(100);
         Integer newQuantity = 3;
         OrderSide newOrderSide = null;
@@ -371,10 +372,12 @@ public class OrderServiceTest {
         given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
         given(userRepository.findUserById(user.getId())).willReturn(Optional.of(user));
         given(stockRepository.findStockById(stock.getId())).willReturn(Optional.of(stock));
+        given(clock.instant()).willReturn(instant);
+        given(clock.getZone()).willReturn(ZoneId.of("CET"));
 
         var validationResponse = orderService.updateOrder(order.getId(), patchOrderDto);
 
-        verify(orderRepository).save(order);
+        verify(orderRepository, never()).save(any());
         Assertions.assertThat(validationResponse.isValid()).isTrue();
         Assertions.assertThat(order.getQuantity()).isEqualTo(3);
         Assertions.assertThat(order.getPrice()).isEqualTo(newPrice);
@@ -396,6 +399,35 @@ public class OrderServiceTest {
 
         verify(orderRepository, never()).save(order);
         Assertions.assertThat(validationResponse.isValid()).isFalse();
+    }
+
+    @Test
+    public void GetOrderBook_Returns_Sorted_Orders_And_Merges() {
+        given(stockRepository.findStockByTicker(stock.getTicker())).willReturn(Optional.of(stock));
+        List<Order> orders = new ArrayList<>(Arrays.asList(
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(100), 10, OrderSide.BUY, OrderType.TIME_LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(200), 2, OrderSide.BUY, OrderType.LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(130), 1, OrderSide.BUY, OrderType.LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(100), 3, OrderSide.BUY, OrderType.TIME_LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(100), 3, OrderSide.SELL, OrderType.TIME_LIMIT, order.getCancellationTime())
+        ));
+
+        given(orderRepository.findAllByStockId(stock.getId())).willReturn(orders);
+
+        List<OrderBookDto> expected = new ArrayList<>(Arrays.asList(
+                new OrderBookDto(BigDecimal.valueOf(100), 13, OrderSide.BUY),
+                new OrderBookDto(BigDecimal.valueOf(100), 3, OrderSide.SELL),
+                new OrderBookDto(BigDecimal.valueOf(130), 1, OrderSide.BUY),
+                new OrderBookDto(BigDecimal.valueOf(200), 2, OrderSide.BUY)
+        ));
+
+        var res = orderService.getOrderBook(stock.getTicker());
+
+        Assertions.assertThat(res.size()).isEqualTo(expected.size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            Assertions.assertThat(res.get(i)).usingRecursiveComparison().isEqualTo(expected.get(i));
+        }
     }
 
 }

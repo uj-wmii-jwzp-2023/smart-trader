@@ -11,16 +11,18 @@ import java.math.BigDecimal;
 public class Stock {
     @Id
     private String id;
-    @Indexed(unique=true)
+    @Indexed(unique = true)
     @NotNull(message = "Ticker field is required.")
     private String ticker;
     @NotNull(message = "Name field is required.")
     private String name;
+    @NotNull(message = "Price field is required.")
     private BigDecimal price;
 
-    public Stock(String ticker, String name) {
+    public Stock(String ticker, String name, BigDecimal price) {
         this.ticker = ticker;
         this.name = name;
+        this.price = price;
     }
 
     public String getId() {

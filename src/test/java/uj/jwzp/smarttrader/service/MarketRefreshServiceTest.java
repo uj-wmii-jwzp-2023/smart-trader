@@ -38,9 +38,8 @@ public class MarketRefreshServiceTest {
         String name = "Company Name";
         String ticker = "TICKER";
         String id = "0";
-        Stock stock = new Stock(ticker, name);
+        Stock stock = new Stock(ticker, name, BigDecimal.valueOf(100));
         stock.setId(id);
-        stock.setPrice(BigDecimal.valueOf(100));
         List<Stock> stocks = List.of(stock);
 
         given(apiWrapper.getStockPrice(anyString())).willReturn(BigDecimal.ONE);
