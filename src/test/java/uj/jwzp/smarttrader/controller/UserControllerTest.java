@@ -172,7 +172,7 @@ public class UserControllerTest {
     }
 
     @Test
-    public void Delete_Should_Return_NotFound_When_User_Dont_Exist() throws Exception {
+    public void Delete_Should_Return_NotFound_When_User_Does_Not_Exist() throws Exception {
         String notExistingName = "not-existing-name";
 
         given(userService.existsByName(notExistingName)).willReturn(Boolean.FALSE);

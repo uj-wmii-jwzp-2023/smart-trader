@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import uj.jwzp.smarttrader.dto.PatchOrderDto;
 import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.dto.OrderDto;
@@ -26,13 +27,13 @@ public class OrderController {
     private final OrderMapper orderMapper;
 
     @GetMapping
-    @PreAuthorize("#username == authentication.principal.username")
-    public List<Order> getAllOrders(@PathVariable("username") String username) {
-        return orderService.getOrdersByUserName(username);
+    @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
+    public ResponseEntity<List<Order>> getAllOrders(@PathVariable("username") String username) {
+        return new ResponseEntity<>(orderService.getAllOrders(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("#username == authentication.principal.username")
+    @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
     public ResponseEntity<Order> getOrder(@PathVariable("id") String id, @PathVariable("username") String username) {
         Optional<Order> optionalOrder = orderService.getOrderById(id);
         return optionalOrder
@@ -82,5 +83,33 @@ public class OrderController {
         }
         return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
 
+    }
+
+    @PatchMapping(value = "/{stockId}", consumes = "application/json")
+    @PreAuthorize("#username == authentication.principal.username")
+    public ResponseEntity<String> updateOrder(@RequestBody PatchOrderDto orderDto,
+                                                       @PathVariable("username") String username,
+                                                       @PathVariable("stockId") String stockId) {
+        if (!orderService.existsById(stockId)) {
+            return new ResponseEntity<>("Order does not exist", HttpStatus.NOT_FOUND);
+        }
+        var validationResponse = orderService.updateOrder(stockId, orderDto);
+
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order updated", HttpStatus.OK);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
+    }
+
+    @DeleteMapping(value = "/{stockId}")
+    @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
+    public ResponseEntity<String> deleteOrder(@PathVariable("username") String username,
+                                              @PathVariable("stockId") String stockId) {
+        boolean orderExists = orderService.existsById(stockId);
+        if (orderExists) {
+            orderService.deleteOrder(stockId);
+            return new ResponseEntity<>("Order cancelled successfully", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Order does not exist", HttpStatus.NOT_FOUND);
     }
 }

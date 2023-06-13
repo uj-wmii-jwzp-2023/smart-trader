@@ -1,6 +1,7 @@
 package uj.jwzp.smarttrader.service;
 
 import org.springframework.stereotype.Service;
+import uj.jwzp.smarttrader.dto.PatchOrderDto;
 import uj.jwzp.smarttrader.model.*;
 import uj.jwzp.smarttrader.repository.OrderRepository;
 import uj.jwzp.smarttrader.repository.StockRepository;
@@ -38,7 +39,7 @@ public class OrderService {
         if (order.getQuantity() <= 0) {
             validationResponse.addMessage("Quantity should be a positive value.");
         }
-        if (order.getCancellationTime() != null && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
+        if (order.getOrderType() == OrderType.TIME_LIMIT && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
             validationResponse.addMessage("Cancellation time should be a future date.");
         }
 
@@ -96,6 +97,10 @@ public class OrderService {
         }
 
         return validationResponse;
+    }
+
+    public ValidationResponse validateUpdateOrder(Order order) {
+        return new ValidationResponse();
     }
 
     public boolean isMarketOpen() {
@@ -234,7 +239,7 @@ public class OrderService {
 
             var validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
             if (!validationResponse.isValid()) {
-                continue;
+                toRemove.add(order);
             }
 
             boolean isExecuted = executeOrder(order, optionalUser, optionalStock);
@@ -243,8 +248,7 @@ public class OrderService {
             }
         }
 
-        orders.removeAll(toRemove);
-        orderRepository.saveAll(orders);
+        orderRepository.deleteAll(toRemove);
     }
 
     public List<Order> getAllOrders() {
@@ -262,5 +266,47 @@ public class OrderService {
 
     public Optional<Order> getOrderById(String id) {
         return orderRepository.findById(id);
+    }
+
+    public ValidationResponse updateOrder(String orderId, PatchOrderDto patchOrderDto) {
+        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+        Order order = optionalOrder.get();
+
+        if (patchOrderDto.getPrice() != null) {
+            order.setPrice(patchOrderDto.getPrice());
+        }
+        if (patchOrderDto.getQuantity() != null) {
+            order.setQuantity(patchOrderDto.getQuantity());
+        }
+        if (patchOrderDto.getOrderSide() != null) {
+            order.setOrderSide(patchOrderDto.getOrderSide());
+        }
+        if (order.getOrderType() == OrderType.TIME_LIMIT && patchOrderDto.getCancellationTime() != null) {
+            order.setCancellationTime(patchOrderDto.getCancellationTime());
+        }
+
+        var validationResponse = validateNewOrder(order);
+        if (!validationResponse.isValid()) {
+            return validationResponse;
+        }
+
+        Optional<User> optionalUser = userRepository.findUserById(order.getUserId());
+        Optional<Stock> optionalStock = stockRepository.findStockById(order.getStockId());
+
+        validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
+        if (!validationResponse.isValid()) {
+            return validationResponse;
+        }
+
+        orderRepository.save(order);
+        return new ValidationResponse();
+    }
+
+    public boolean existsById(String stockId) {
+        return orderRepository.existsById(stockId);
+    }
+
+    public void deleteOrder(String stockId) {
+        orderRepository.deleteById(stockId);
     }
 }
