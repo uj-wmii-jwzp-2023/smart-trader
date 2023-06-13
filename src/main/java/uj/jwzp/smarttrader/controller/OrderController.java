@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.dto.OrderDto;
+import uj.jwzp.smarttrader.model.OrderType;
 import uj.jwzp.smarttrader.service.OrderService;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class OrderController {
         this.orderService = orderService;
         this.orderMapper = orderMapper;
     }
+
     private final OrderService orderService;
     private final OrderMapper orderMapper;
 
@@ -28,6 +30,7 @@ public class OrderController {
     public List<Order> getAllOrders(@PathVariable("username") String username) {
         return orderService.getOrdersByUserName(username);
     }
+
     @GetMapping("/{id}")
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<Order> getOrder(@PathVariable("id") String id, @PathVariable("username") String username) {
@@ -36,31 +39,48 @@ public class OrderController {
                 .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
     }
+
     @PostMapping(value = "/market", consumes = "application/json")
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<String> addMarketOrder(@Validated(OrderDto.Market.class) @RequestBody OrderDto orderDto,
                                                  @PathVariable("username") String username) {
         orderDto.setUsername(username);
-        orderService.addOrder(orderMapper.toEntity(orderDto));
+        orderDto.setOrderType(OrderType.MARKET);
+        var validationResponse = orderService.addOrder(orderMapper.toEntity(orderDto));
 
-        return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
+
     }
+
     @PostMapping(value = "/limit", consumes = "application/json")
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<String> addLimitOrder(@Validated(OrderDto.Limit.class) @RequestBody OrderDto orderDto,
                                                 @PathVariable("username") String username) {
         orderDto.setUsername(username);
-        orderService.addOrder(orderMapper.toEntity(orderDto));
+        orderDto.setOrderType(OrderType.LIMIT);
+        var validationResponse = orderService.addOrder(orderMapper.toEntity(orderDto));
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
 
-        return new ResponseEntity<>("Order created", HttpStatus.CREATED);
     }
+
     @PostMapping(value = "/time-limit", consumes = "application/json")
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<String> addTimeLimitOrder(@Validated(OrderDto.TimeLimit.class) @RequestBody OrderDto orderDto,
                                                     @PathVariable("username") String username) {
         orderDto.setUsername(username);
-        orderService.addOrder(orderMapper.toEntity(orderDto));
+        orderDto.setOrderType(OrderType.TIME_LIMIT);
+        var validationResponse = orderService.addOrder(orderMapper.toEntity(orderDto));
 
-        return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        if (validationResponse.isValid()) {
+            return new ResponseEntity<>("Order created", HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
+
     }
 }

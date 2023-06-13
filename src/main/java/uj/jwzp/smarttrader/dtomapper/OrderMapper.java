@@ -26,10 +26,12 @@ public class OrderMapper {
                 ticker,
                 order.getPrice(),
                 order.getQuantity(),
+                order.getOrderSide(),
                 order.getOrderType(),
                 order.getCancellationTime()
         );
     }
+
     public Order toEntity(OrderDto dto) {
         String userId = userRepository.findUserByName(dto.getUsername()).orElseThrow().getId();
         String stockId = stockRepository.findStockByTicker(dto.getTicker()).orElseThrow().getId();
@@ -39,6 +41,7 @@ public class OrderMapper {
                 stockId,
                 dto.getPrice(),
                 dto.getQuantity(),
+                dto.getOrderSide(),
                 dto.getOrderType(),
                 dto.getCancellationTime()
         );

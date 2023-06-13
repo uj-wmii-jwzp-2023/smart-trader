@@ -12,18 +12,25 @@ import java.util.List;
 
 
 @Service
-public class StockRefreshService {
+public class MarketRefreshService {
     StockRepository stockRepository;
+    private final OrderService orderService;
 
     StockApiWrapper apiWrapper;
 
     @Autowired
-    public StockRefreshService(StockRepository stockRepository, StockApiWrapper apiWrapper) {
+    public MarketRefreshService(StockRepository stockRepository, OrderService orderService, StockApiWrapper apiWrapper) {
         this.stockRepository = stockRepository;
+        this.orderService = orderService;
         this.apiWrapper = apiWrapper;
     }
 
     @Scheduled(cron = "10 */1 9-16 * * 1-5") // every 70 second, 9am-5pm, Monday-Friday
+    public void refreshMarket() {
+        updateAllStockPrices();
+        orderService.matchOrders();
+    }
+
     public void updateAllStockPrices() {
         List<Stock> stocks = stockRepository.findAll();
         for (var stock : stocks) {

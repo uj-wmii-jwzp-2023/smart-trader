@@ -1,7 +1,6 @@
 package uj.jwzp.smarttrader.model;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -21,14 +20,18 @@ public class Order {
     @NotNull(message = "Quantity field is required.")
     private Integer quantity;
     @NotNull(message = "Order Type field is required.")
+    private OrderSide orderSide;
+
     private OrderType orderType;
+
     private LocalDateTime cancellationTime;
 
-    public Order(String userId, String stockId, BigDecimal price, Integer quantity, OrderType orderType, LocalDateTime cancellationTime) {
+    public Order(String userId, String stockId, BigDecimal price, Integer quantity, OrderSide orderSide, OrderType orderType, LocalDateTime cancellationTime) {
         this.userId = userId;
         this.stockId = stockId;
         this.price = price;
         this.quantity = quantity;
+        this.orderSide = orderSide;
         this.orderType = orderType;
         this.cancellationTime = cancellationTime;
     }
@@ -71,6 +74,14 @@ public class Order {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public OrderSide getOrderSide() {
+        return orderSide;
+    }
+
+    public void setOrderSide(OrderSide orderSide) {
+        this.orderSide = orderSide;
     }
 
     public OrderType getOrderType() {
