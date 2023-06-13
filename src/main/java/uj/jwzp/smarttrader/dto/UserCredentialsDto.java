@@ -1,6 +1,14 @@
 package uj.jwzp.smarttrader.dto;
 
-public class LoginDto {
+public class UserCredentialsDto {
+    private String username;
+    private String password;
+
+    public UserCredentialsDto(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
     public String getUsername() {
         return username;
     }
@@ -16,7 +24,4 @@ public class LoginDto {
     public void setPassword(String password) {
         this.password = password;
     }
-
-    private String username;
-    private String password;
 }

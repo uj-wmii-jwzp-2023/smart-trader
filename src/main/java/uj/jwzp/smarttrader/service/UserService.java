@@ -1,20 +1,26 @@
 package uj.jwzp.smarttrader.service;
 
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import uj.jwzp.smarttrader.dto.UserCredentialsDto;
 import uj.jwzp.smarttrader.model.User;
 import uj.jwzp.smarttrader.repository.UserRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    public UserService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public void addUser(User user) {
@@ -33,7 +39,9 @@ public class UserService {
         return userRepository.findUserByName(name);
     }
 
-    public Boolean existsByName(String name) { return userRepository.existsByName(name); }
+    public Boolean existsByName(String name) {
+        return userRepository.existsByName(name);
+    }
 
     public void depositFunds(String username, BigDecimal value) {
         User user = getUserByName(username).orElseThrow();
@@ -45,5 +53,33 @@ public class UserService {
         User user = getUserByName(username).orElseThrow();
         user.setCashBalance(user.getCashBalance().subtract(value));
         userRepository.save(user);
+    }
+
+    public void deleteUser(String username) {
+        userRepository.deleteByName(username);
+    }
+
+    public void updateUser(String username, UserCredentialsDto patchUser) {
+        Optional<User> optionalUser = userRepository.findUserByName(username);
+        User user = optionalUser.get();
+
+        boolean changed = false;
+        if (patchUser.getUsername() != null) {
+            changed = true;
+            user.setName(patchUser.getUsername());
+        }
+        if (patchUser.getPassword() != null) {
+            changed = true;
+            String encodedPassword = passwordEncoder.encode(patchUser.getPassword());
+            user.setPassword(encodedPassword);
+        }
+
+        if (changed) {
+            userRepository.save(user);
+            var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+            var authenticationToken = new UsernamePasswordAuthenticationToken(user.getName(), user.getPassword(), authorities);
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        }
+
     }
 }

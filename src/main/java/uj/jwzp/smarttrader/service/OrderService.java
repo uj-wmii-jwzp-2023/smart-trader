@@ -1,6 +1,5 @@
 package uj.jwzp.smarttrader.service;
 
-import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import uj.jwzp.smarttrader.model.*;
 import uj.jwzp.smarttrader.repository.OrderRepository;
