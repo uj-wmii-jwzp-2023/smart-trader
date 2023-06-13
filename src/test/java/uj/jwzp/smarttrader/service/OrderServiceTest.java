@@ -290,6 +290,23 @@ public class OrderServiceTest {
     }
 
     @Test
+    public void AddOrder_Saves_Order_When_Added_Outside_Of_Trading_Widow() {
+        LocalDateTime outsideDateTime = LocalDateTime.of(2023, 6, 12, 6, 0);
+        Instant outsideInstant = outsideDateTime.atZone(ZoneId.of("CET")).toInstant();
+
+        given(clock.instant()).willReturn(outsideInstant);
+        given(clock.getZone()).willReturn(ZoneId.of("CET"));
+
+        given(userRepository.findUserById(user.getId())).willReturn(Optional.of(user));
+        given(stockRepository.findStockById(stock.getId())).willReturn(Optional.of(stock));
+
+        var validationResponse = orderService.addOrder(order);
+
+        verify(orderRepository).save(order);
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
+    }
+
+    @Test
     public void AddOrder_Saves_Order_When_Not_Realised() {
         given(clock.instant()).willReturn(instant);
         given(clock.getZone()).willReturn(ZoneId.of("CET"));
