@@ -30,8 +30,8 @@ public class OrderServiceTest {
     private StockRepository stockRepository;
     @Mock
     private Clock clock;
-    private LocalDateTime dateTime = LocalDateTime.MAX;
-    private Instant instant = dateTime.atZone(ZoneId.of("CET")).toInstant();
+    private final LocalDateTime dateTime = LocalDateTime.of(2023, 6, 12, 12, 0); // during open market
+    private final Instant instant = dateTime.atZone(ZoneId.of("CET")).toInstant();
 
     @InjectMocks
     private OrderService orderService;
@@ -212,7 +212,7 @@ public class OrderServiceTest {
 
         var validationResponse = orderService.validateNewOrder(order);
 
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
 
@@ -224,7 +224,7 @@ public class OrderServiceTest {
 
         var validationResponse = orderService.validateSellOrder(order, user, stock);
 
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
     @Test
@@ -240,7 +240,7 @@ public class OrderServiceTest {
     @Test
     public void ValidateBuyOrder_Returns_Empty_List_When_Valid_Balance() {
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
     @Test
@@ -250,7 +250,7 @@ public class OrderServiceTest {
         order.setQuantity(2);
 
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isNotEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isFalse();
     }
 
     @Test
@@ -260,7 +260,7 @@ public class OrderServiceTest {
         stock.setPrice(BigDecimal.valueOf(10));
         order.setQuantity(1);
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
 
@@ -272,7 +272,7 @@ public class OrderServiceTest {
         order.setQuantity(2);
 
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isNotEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isFalse();
     }
 
 

@@ -15,8 +15,8 @@ import java.util.List;
 public class MarketRefreshService {
     StockRepository stockRepository;
     private final OrderService orderService;
-
     StockApiWrapper apiWrapper;
+    public final static String MARKET_TIME_WINDOW = "10 */1 9-16 * * 1-5"; // every 70 second, 9am-5pm, Monday-Friday
 
     @Autowired
     public MarketRefreshService(StockRepository stockRepository, OrderService orderService, StockApiWrapper apiWrapper) {
@@ -25,7 +25,7 @@ public class MarketRefreshService {
         this.apiWrapper = apiWrapper;
     }
 
-    @Scheduled(cron = "10 */1 9-16 * * 1-5") // every 70 second, 9am-5pm, Monday-Friday
+    @Scheduled(cron = MARKET_TIME_WINDOW)
     public void refreshMarket() {
         updateAllStockPrices();
         orderService.matchOrders();
@@ -38,7 +38,7 @@ public class MarketRefreshService {
                 BigDecimal newPrice = apiWrapper.getStockPrice(stock.getTicker());
                 stock.setPrice(newPrice);
                 stockRepository.save(stock);
-                System.out.println(stock.getTicker() + " price updated."); // log
+                System.out.println(stock.getTicker() + " price updated."); // fixme log
             } catch (Exception e) {
                 System.out.println(stock.getTicker() + " price not found."); // log
             }

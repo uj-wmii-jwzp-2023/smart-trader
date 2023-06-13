@@ -1,5 +1,6 @@
 package uj.jwzp.smarttrader.service;
 
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import uj.jwzp.smarttrader.model.*;
 import uj.jwzp.smarttrader.repository.OrderRepository;
@@ -8,7 +9,9 @@ import uj.jwzp.smarttrader.repository.UserRepository;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -96,6 +99,17 @@ public class OrderService {
         return validationResponse;
     }
 
+    public boolean isMarketOpen() {
+        LocalDateTime currentTime = LocalDateTime.now(clock);
+        DayOfWeek dayOfWeek = currentTime.getDayOfWeek();
+        LocalTime time = currentTime.toLocalTime();
+
+        return dayOfWeek.getValue() >= 1 // Monday
+                && dayOfWeek.getValue() <= 5 // Friday
+                && time.isAfter(LocalTime.of(9, 0))
+                && time.isBefore(LocalTime.of(17, 0));
+    }
+
     public ValidationResponse addOrder(Order order) {
         var validationResponse = validateNewOrder(order);
         if (!validationResponse.isValid()) {
@@ -112,7 +126,12 @@ public class OrderService {
             return validationResponse;
         }
 
-        boolean realised = executeOrder(order, optionalUser, optionalStock);
+        boolean realised;
+        if (isMarketOpen()) {
+            realised = executeOrder(order, optionalUser, optionalStock);
+        } else {
+            realised = false;
+        }
 
         if (!realised && order.getOrderType() != OrderType.MARKET) {
             orderRepository.save(order);
