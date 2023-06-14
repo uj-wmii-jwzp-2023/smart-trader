@@ -82,3 +82,10 @@ We have different types of orders, but all of them can be stored in the same for
 - Stocks can be traded between 9AM and 5PM CET.
 - Orders can be inserted at any point, if they are inserted outside of trading window they will be executed when market opens.
 
+# Running application
+Running application with Docker
+```console
+docker build -t smarttrader .
+docker run smarttrader -p 8080:8080
+```
+
