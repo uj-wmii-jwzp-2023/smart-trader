@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import uj.jwzp.smarttrader.dto.OrderDto;
+import uj.jwzp.smarttrader.dto.PatchOrderDto;
 import uj.jwzp.smarttrader.dtomapper.OrderMapper;
 import uj.jwzp.smarttrader.model.Order;
 import uj.jwzp.smarttrader.model.OrderSide;
@@ -226,5 +227,71 @@ public class OrderControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
 
         verify(orderService, never()).addOrder(any(Order.class));
+    }
+
+    @Test
+    public void UpdateOrder_Should_Return_NotFound_When_Order_Does_Not_Exist() throws Exception {
+        String orderId = "orderId";
+        given(orderService.existsById(orderId)).willReturn(Boolean.FALSE);
+
+        BigDecimal newPrice = null;
+        Integer newQuantity = null;
+        OrderSide newOrderSide = null;
+        LocalDateTime newCancellationTime = null;
+
+        PatchOrderDto patchOrderDto = new PatchOrderDto(newPrice, newQuantity, newOrderSide, newCancellationTime);
+
+        String requestBody = objectMapper.writeValueAsString(patchOrderDto);
+
+        String url = String.format("/api/v1/users/%s/orders/%s", "dummyName", orderId);
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound());
+        verify(orderService, never()).updateOrder(orderId, patchOrderDto);
+    }
+
+    @Test
+    public void UpdateOrder_Should_Return_Ok_When_Valid_Parameters() throws Exception {
+        String orderId = "orderId";
+        given(orderService.existsById(orderId)).willReturn(Boolean.TRUE);
+
+        BigDecimal newPrice = null;
+        Integer newQuantity = null;
+        OrderSide newOrderSide = null;
+        LocalDateTime newCancellationTime = null;
+
+        PatchOrderDto patchOrderDto = new PatchOrderDto(newPrice, newQuantity, newOrderSide, newCancellationTime);
+        String requestBody = objectMapper.writeValueAsString(patchOrderDto);
+
+        given(orderService.updateOrder(eq(orderId), any())).willReturn(new ValidationResponse());
+
+        String url = String.format("/api/v1/users/%s/orders/%s", "dummyName", orderId);
+        mockMvc.perform(MockMvcRequestBuilders.patch(url)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    public void DeleteOrder_Should_Return_Ok_When_Order_Exist() throws Exception {
+        String orderId = "orderId";
+        given(orderService.existsById(orderId)).willReturn(Boolean.TRUE);
+
+        String url = String.format("/api/v1/users/%s/orders/%s", "dummyName", orderId);
+        mockMvc.perform(MockMvcRequestBuilders.delete(url))
+                .andExpect(status().isOk());
+        verify(orderService).deleteOrder(orderId);
+    }
+
+    @Test
+    public void DeleteOrder_Should_Return_NotFound_When_Order_Does_Not_Exist() throws Exception {
+        String orderId = "orderId";
+        given(orderService.existsById(orderId)).willReturn(Boolean.FALSE);
+
+        String url = String.format("/api/v1/users/%s/orders/%s", "dummyName", orderId);
+        mockMvc.perform(MockMvcRequestBuilders.delete(url))
+                .andExpect(status().isNotFound());
+        verify(orderService, never()).deleteOrder(orderId);
     }
 }

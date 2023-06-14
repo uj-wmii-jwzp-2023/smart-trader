@@ -1,6 +1,8 @@
 package uj.jwzp.smarttrader.service;
 
 import org.springframework.stereotype.Service;
+import uj.jwzp.smarttrader.dto.OrderBookDto;
+import uj.jwzp.smarttrader.dto.PatchOrderDto;
 import uj.jwzp.smarttrader.model.*;
 import uj.jwzp.smarttrader.repository.OrderRepository;
 import uj.jwzp.smarttrader.repository.StockRepository;
@@ -8,10 +10,10 @@ import uj.jwzp.smarttrader.repository.UserRepository;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalTime;
+import java.util.*;
 
 @Service
 public class OrderService {
@@ -36,7 +38,7 @@ public class OrderService {
         if (order.getQuantity() <= 0) {
             validationResponse.addMessage("Quantity should be a positive value.");
         }
-        if (order.getCancellationTime() != null && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
+        if (order.getOrderType() == OrderType.TIME_LIMIT && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
             validationResponse.addMessage("Cancellation time should be a future date.");
         }
 
@@ -60,6 +62,11 @@ public class OrderService {
         User user = optionalUser.get();
         Stock stock = optionalStock.get();
 
+        if (stock.getPrice() == null) {
+            validationResponse.addMessage("Stock not available.");
+            return validationResponse;
+        }
+
         if (order.getOrderSide() == OrderSide.SELL) {
             return validateSellOrder(order, user, stock);
         }
@@ -71,8 +78,12 @@ public class OrderService {
         ValidationResponse validationResponse = new ValidationResponse();
 
         boolean userDoesNotHaveRequiredStock = user.getAssets().stream().noneMatch(asset -> asset.stockId.equals(stock.getId()));
-        boolean userDoesNotHaveEnoughStockQuantity = order.getQuantity() > user.getAssets().stream().filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity;
-        if (userDoesNotHaveRequiredStock || userDoesNotHaveEnoughStockQuantity) {
+        boolean userDoesNotHaveEnoughStockQuantity = userDoesNotHaveRequiredStock ||
+                order.getQuantity() > user
+                        .getAssets()
+                        .stream()
+                        .filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity;
+        if (userDoesNotHaveEnoughStockQuantity) {
             validationResponse.addMessage("Order quantity should be smaller or equal to the amount of stock that user owns");
         }
 
@@ -96,6 +107,17 @@ public class OrderService {
         return validationResponse;
     }
 
+    public boolean isMarketOpen() {
+        LocalDateTime currentTime = LocalDateTime.now(clock);
+        DayOfWeek dayOfWeek = currentTime.getDayOfWeek();
+        LocalTime time = currentTime.toLocalTime();
+
+        return dayOfWeek.getValue() >= 1 // Monday
+                && dayOfWeek.getValue() <= 5 // Friday
+                && time.isAfter(LocalTime.of(9, 0))
+                && time.isBefore(LocalTime.of(17, 0));
+    }
+
     public ValidationResponse addOrder(Order order) {
         var validationResponse = validateNewOrder(order);
         if (!validationResponse.isValid()) {
@@ -112,7 +134,12 @@ public class OrderService {
             return validationResponse;
         }
 
-        boolean realised = executeOrder(order, optionalUser, optionalStock);
+        boolean realised;
+        if (isMarketOpen()) {
+            realised = executeOrder(order, optionalUser, optionalStock);
+        } else {
+            realised = false;
+        }
 
         if (!realised && order.getOrderType() != OrderType.MARKET) {
             orderRepository.save(order);
@@ -216,6 +243,7 @@ public class OrderService {
 
             var validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
             if (!validationResponse.isValid()) {
+                toRemove.add(order);
                 continue;
             }
 
@@ -225,8 +253,7 @@ public class OrderService {
             }
         }
 
-        orders.removeAll(toRemove);
-        orderRepository.saveAll(orders);
+        orderRepository.deleteAll(toRemove);
     }
 
     public List<Order> getAllOrders() {
@@ -244,5 +271,59 @@ public class OrderService {
 
     public Optional<Order> getOrderById(String id) {
         return orderRepository.findById(id);
+    }
+
+    public ValidationResponse updateOrder(String orderId, PatchOrderDto patchOrderDto) {
+        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+        Order order = optionalOrder.get();
+
+        if (patchOrderDto.getPrice() != null) {
+            order.setPrice(patchOrderDto.getPrice());
+        }
+        if (patchOrderDto.getQuantity() != null) {
+            order.setQuantity(patchOrderDto.getQuantity());
+        }
+        if (patchOrderDto.getOrderSide() != null) {
+            order.setOrderSide(patchOrderDto.getOrderSide());
+        }
+        if (order.getOrderType() == OrderType.TIME_LIMIT && patchOrderDto.getCancellationTime() != null) {
+            order.setCancellationTime(patchOrderDto.getCancellationTime());
+        }
+
+        return addOrder(order);
+    }
+
+    public boolean existsById(String stockId) {
+        return orderRepository.existsById(stockId);
+    }
+
+    public void deleteOrder(String stockId) {
+        orderRepository.deleteById(stockId);
+    }
+
+    public List<OrderBookDto> getOrderBook(String ticker) {
+        Optional<Stock> optionalStock = stockRepository.findStockByTicker(ticker);
+        Stock stock = optionalStock.get();
+
+        List<Order> orders = orderRepository.findAllByStockId(stock.getId());
+        orders.sort(Comparator.comparing(Order::getPrice));
+
+        List<OrderBookDto> orderBookDtos = new ArrayList<>();
+
+        OrderBookDto prevElem = null;
+
+        for (Order order : orders) {
+            if (prevElem != null
+                    && Objects.equals(order.getPrice(), prevElem.getPrice())
+                    && order.getOrderSide() == prevElem.getOrderSide()) {
+                prevElem.setQuantity(order.getQuantity() + prevElem.getQuantity());
+            } else {
+                OrderBookDto orderBookDto = new OrderBookDto(order.getPrice(), order.getQuantity(), order.getOrderSide());
+                orderBookDtos.add(orderBookDto);
+                prevElem = orderBookDto;
+            }
+        }
+
+        return orderBookDtos;
     }
 }

@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class Stock {
     @Id
     private String id;
-    @Indexed(unique=true)
+    @Indexed(unique = true)
     @NotNull(message = "Ticker field is required.")
     private String ticker;
     @NotNull(message = "Name field is required.")

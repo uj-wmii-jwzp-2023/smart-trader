@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uj.jwzp.smarttrader.dto.OrderBookDto;
+import uj.jwzp.smarttrader.dto.PatchOrderDto;
 import uj.jwzp.smarttrader.model.*;
 import uj.jwzp.smarttrader.repository.OrderRepository;
 import uj.jwzp.smarttrader.repository.StockRepository;
@@ -30,8 +32,8 @@ public class OrderServiceTest {
     private StockRepository stockRepository;
     @Mock
     private Clock clock;
-    private LocalDateTime dateTime = LocalDateTime.MAX;
-    private Instant instant = dateTime.atZone(ZoneId.of("CET")).toInstant();
+    private final LocalDateTime dateTime = LocalDateTime.of(2023, 6, 12, 12, 0); // during open market
+    private final Instant instant = dateTime.atZone(ZoneId.of("CET")).toInstant();
 
     @InjectMocks
     private OrderService orderService;
@@ -191,28 +193,28 @@ public class OrderServiceTest {
 
     @Test
     public void ValidateNewOrder_Should_Return_Errors_When_Invalid_Parameters() {
+        order.setOrderType(OrderType.TIME_LIMIT);
         given(clock.instant()).willReturn(instant);
         given(clock.getZone()).willReturn(ZoneId.of("CET"));
 
         order.setPrice(BigDecimal.valueOf(-10));
         order.setQuantity(-4);
+        LocalDateTime oldDate = LocalDateTime.of(2020, 6, 12, 3, 1);
+        order.setCancellationTime(oldDate);
 
         var validationResponse = orderService.validateNewOrder(order);
 
-        Assertions.assertThat(validationResponse.getMessages().size()).isEqualTo(2);
+        Assertions.assertThat(validationResponse.getMessages().size()).isEqualTo(3);
     }
 
     @Test
     public void ValidateNewOrder_Should_Return_Empty_List_When_Valid_Parameters() {
-        given(clock.instant()).willReturn(instant);
-        given(clock.getZone()).willReturn(ZoneId.of("CET"));
-
         order.setPrice(BigDecimal.valueOf(100));
         order.setQuantity(10);
 
         var validationResponse = orderService.validateNewOrder(order);
 
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
 
@@ -224,7 +226,7 @@ public class OrderServiceTest {
 
         var validationResponse = orderService.validateSellOrder(order, user, stock);
 
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
     @Test
@@ -240,7 +242,7 @@ public class OrderServiceTest {
     @Test
     public void ValidateBuyOrder_Returns_Empty_List_When_Valid_Balance() {
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
     @Test
@@ -250,7 +252,7 @@ public class OrderServiceTest {
         order.setQuantity(2);
 
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isNotEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isFalse();
     }
 
     @Test
@@ -260,7 +262,7 @@ public class OrderServiceTest {
         stock.setPrice(BigDecimal.valueOf(10));
         order.setQuantity(1);
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
 
@@ -272,7 +274,7 @@ public class OrderServiceTest {
         order.setQuantity(2);
 
         var validationResponse = orderService.validateBuyOrder(order, user, stock);
-        Assertions.assertThat(validationResponse.getMessages()).isNotEmpty();
+        Assertions.assertThat(validationResponse.isValid()).isFalse();
     }
 
 
@@ -286,6 +288,23 @@ public class OrderServiceTest {
         var validationResponse = orderService.addOrder(order);
 
         verify(orderRepository, never()).save(any(Order.class));
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
+    }
+
+    @Test
+    public void AddOrder_Saves_Order_When_Added_Outside_Of_Trading_Widow() {
+        LocalDateTime outsideDateTime = LocalDateTime.of(2023, 6, 12, 6, 0);
+        Instant outsideInstant = outsideDateTime.atZone(ZoneId.of("CET")).toInstant();
+
+        given(clock.instant()).willReturn(outsideInstant);
+        given(clock.getZone()).willReturn(ZoneId.of("CET"));
+
+        given(userRepository.findUserById(user.getId())).willReturn(Optional.of(user));
+        given(stockRepository.findStockById(stock.getId())).willReturn(Optional.of(stock));
+
+        var validationResponse = orderService.addOrder(order);
+
+        verify(orderRepository).save(order);
         Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
@@ -332,13 +351,83 @@ public class OrderServiceTest {
                 .subtract(order.getPrice().multiply(BigDecimal.valueOf(order.getQuantity())));
 
         orderService.matchOrders();
-        verify(orderRepository).saveAll(List.of());
+        verify(orderRepository).deleteAll(orders);
 
 
         Assertions.assertThat(user.getAssets())
                 .usingRecursiveComparison()
                 .isEqualTo(List.of(new Asset(stock.getId(), order.getQuantity())));
         Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+    }
+
+    @Test
+    public void UpdateOrder_Executes_Order_When_Valid_Parameters() {
+        BigDecimal newPrice = BigDecimal.valueOf(100);
+        Integer newQuantity = 3;
+        OrderSide newOrderSide = null;
+        LocalDateTime newCancellationTime = null;
+
+        PatchOrderDto patchOrderDto = new PatchOrderDto(newPrice, newQuantity, newOrderSide, newCancellationTime);
+
+        given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
+        given(userRepository.findUserById(user.getId())).willReturn(Optional.of(user));
+        given(stockRepository.findStockById(stock.getId())).willReturn(Optional.of(stock));
+        given(clock.instant()).willReturn(instant);
+        given(clock.getZone()).willReturn(ZoneId.of("CET"));
+
+        var validationResponse = orderService.updateOrder(order.getId(), patchOrderDto);
+
+        verify(orderRepository, never()).save(any());
+        Assertions.assertThat(validationResponse.isValid()).isTrue();
+        Assertions.assertThat(order.getQuantity()).isEqualTo(3);
+        Assertions.assertThat(order.getPrice()).isEqualTo(newPrice);
+        Assertions.assertThat(order.getOrderSide()).isEqualTo(OrderSide.BUY);
+    }
+
+    @Test
+    public void UpdateOrder_Does_Not_Save_Order_When_InValid_Parameters() {
+        BigDecimal newPrice = BigDecimal.valueOf(-100);
+        Integer newQuantity = 0;
+        OrderSide newOrderSide = null;
+        LocalDateTime newCancellationTime = null;
+
+        PatchOrderDto patchOrderDto = new PatchOrderDto(newPrice, newQuantity, newOrderSide, newCancellationTime);
+
+        given(orderRepository.findById(order.getId())).willReturn(Optional.of(order));
+
+        var validationResponse = orderService.updateOrder(order.getId(), patchOrderDto);
+
+        verify(orderRepository, never()).save(order);
+        Assertions.assertThat(validationResponse.isValid()).isFalse();
+    }
+
+    @Test
+    public void GetOrderBook_Returns_Sorted_Orders_And_Merges() {
+        given(stockRepository.findStockByTicker(stock.getTicker())).willReturn(Optional.of(stock));
+        List<Order> orders = new ArrayList<>(Arrays.asList(
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(100), 10, OrderSide.BUY, OrderType.TIME_LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(200), 2, OrderSide.BUY, OrderType.LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(130), 1, OrderSide.BUY, OrderType.LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(100), 3, OrderSide.BUY, OrderType.TIME_LIMIT, order.getCancellationTime()),
+                new Order(user.getId(), stock.getId(), BigDecimal.valueOf(100), 3, OrderSide.SELL, OrderType.TIME_LIMIT, order.getCancellationTime())
+        ));
+
+        given(orderRepository.findAllByStockId(stock.getId())).willReturn(orders);
+
+        List<OrderBookDto> expected = new ArrayList<>(Arrays.asList(
+                new OrderBookDto(BigDecimal.valueOf(100), 13, OrderSide.BUY),
+                new OrderBookDto(BigDecimal.valueOf(100), 3, OrderSide.SELL),
+                new OrderBookDto(BigDecimal.valueOf(130), 1, OrderSide.BUY),
+                new OrderBookDto(BigDecimal.valueOf(200), 2, OrderSide.BUY)
+        ));
+
+        var res = orderService.getOrderBook(stock.getTicker());
+
+        Assertions.assertThat(res.size()).isEqualTo(expected.size());
+
+        for (int i = 0; i < expected.size(); i++) {
+            Assertions.assertThat(res.get(i)).usingRecursiveComparison().isEqualTo(expected.get(i));
+        }
     }
 
 }
