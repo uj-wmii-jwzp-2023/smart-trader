@@ -6,12 +6,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uj.jwzp.smarttrader.model.Role;
 import uj.jwzp.smarttrader.model.Stock;
 import uj.jwzp.smarttrader.repository.StockRepository;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
@@ -31,7 +29,8 @@ public class StockServiceTest {
         String id = "0";
         BigDecimal price = BigDecimal.ZERO;
 
-        Stock stock = new Stock(ticker, name, price);
+        Stock stock = new Stock(ticker, name);
+        stock.setPrice(price);
         stock.setId(id);
 
         given(stockRepository.findById(stock.getId())).willReturn(Optional.of(stock));

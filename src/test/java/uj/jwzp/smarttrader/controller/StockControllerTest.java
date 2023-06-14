@@ -52,7 +52,8 @@ public class StockControllerTest {
         String ticker = "DUMMY";
         BigDecimal price = BigDecimal.ONE;
 
-        dummyStock = new Stock(name, ticker, price);
+        dummyStock = new Stock(name, ticker);
+        dummyStock.setPrice(price);
         dummyStock.setId(stockId);
     }
 

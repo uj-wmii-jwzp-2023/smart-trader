@@ -16,13 +16,11 @@ public class Stock {
     private String ticker;
     @NotNull(message = "Name field is required.")
     private String name;
-    @NotNull(message = "Price field is required.")
     private BigDecimal price;
 
-    public Stock(String ticker, String name, BigDecimal price) {
+    public Stock(String ticker, String name) {
         this.ticker = ticker;
         this.name = name;
-        this.price = price;
     }
 
     public String getId() {

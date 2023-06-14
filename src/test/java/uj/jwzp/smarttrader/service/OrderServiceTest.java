@@ -65,7 +65,7 @@ public class OrderServiceTest {
 
         String name = "Dummy Name";
         String ticker = "DUMMY";
-        stock = new Stock(name, ticker, BigDecimal.ZERO);
+        stock = new Stock(name, ticker);
         stock.setId(stockId);
         stock.setPrice(BigDecimal.valueOf(15));
     }

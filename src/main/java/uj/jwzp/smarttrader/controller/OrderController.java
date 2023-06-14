@@ -85,15 +85,15 @@ public class OrderController {
 
     }
 
-    @PatchMapping(value = "/{stockId}", consumes = "application/json")
+    @PatchMapping(value = "/{orderId}", consumes = "application/json")
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<String> updateOrder(@RequestBody PatchOrderDto orderDto,
-                                                       @PathVariable("username") String username,
-                                                       @PathVariable("stockId") String stockId) {
-        if (!orderService.existsById(stockId)) {
+                                              @PathVariable("username") String username,
+                                              @PathVariable("orderId") String orderId) {
+        if (!orderService.existsById(orderId)) {
             return new ResponseEntity<>("Order does not exist", HttpStatus.NOT_FOUND);
         }
-        var validationResponse = orderService.updateOrder(stockId, orderDto);
+        var validationResponse = orderService.updateOrder(orderId, orderDto);
 
         if (validationResponse.isValid()) {
             return new ResponseEntity<>("Order updated", HttpStatus.OK);
@@ -101,13 +101,13 @@ public class OrderController {
         return new ResponseEntity<>(String.join(" ", validationResponse.getMessages()), HttpStatus.BAD_REQUEST);
     }
 
-    @DeleteMapping(value = "/{stockId}")
+    @DeleteMapping(value = "/{orderId}")
     @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
     public ResponseEntity<String> deleteOrder(@PathVariable("username") String username,
-                                              @PathVariable("stockId") String stockId) {
-        boolean orderExists = orderService.existsById(stockId);
+                                              @PathVariable("orderId") String orderId) {
+        boolean orderExists = orderService.existsById(orderId);
         if (orderExists) {
-            orderService.deleteOrder(stockId);
+            orderService.deleteOrder(orderId);
             return new ResponseEntity<>("Order cancelled successfully", HttpStatus.OK);
         }
         return new ResponseEntity<>("Order does not exist", HttpStatus.NOT_FOUND);

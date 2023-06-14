@@ -62,6 +62,11 @@ public class OrderService {
         User user = optionalUser.get();
         Stock stock = optionalStock.get();
 
+        if (stock.getPrice() == null) {
+            validationResponse.addMessage("Stock not available.");
+            return validationResponse;
+        }
+
         if (order.getOrderSide() == OrderSide.SELL) {
             return validateSellOrder(order, user, stock);
         }
@@ -73,16 +78,12 @@ public class OrderService {
         ValidationResponse validationResponse = new ValidationResponse();
 
         boolean userDoesNotHaveRequiredStock = user.getAssets().stream().noneMatch(asset -> asset.stockId.equals(stock.getId()));
-        boolean userDoesNotHaveEnoughStockQuantity;
-        if (userDoesNotHaveRequiredStock) {
-            userDoesNotHaveEnoughStockQuantity = false;
-        } else {
-            userDoesNotHaveEnoughStockQuantity = order.getQuantity() > user
-                    .getAssets()
-                    .stream()
-                    .filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity;
-        }
-        if (userDoesNotHaveRequiredStock || userDoesNotHaveEnoughStockQuantity) {
+        boolean userDoesNotHaveEnoughStockQuantity = userDoesNotHaveRequiredStock ||
+                order.getQuantity() > user
+                        .getAssets()
+                        .stream()
+                        .filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity;
+        if (userDoesNotHaveEnoughStockQuantity) {
             validationResponse.addMessage("Order quantity should be smaller or equal to the amount of stock that user owns");
         }
 
@@ -104,10 +105,6 @@ public class OrderService {
         }
 
         return validationResponse;
-    }
-
-    public ValidationResponse validateUpdateOrder(Order order) {
-        return new ValidationResponse();
     }
 
     public boolean isMarketOpen() {
@@ -247,6 +244,7 @@ public class OrderService {
             var validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
             if (!validationResponse.isValid()) {
                 toRemove.add(order);
+                continue;
             }
 
             boolean isExecuted = executeOrder(order, optionalUser, optionalStock);
