@@ -86,6 +86,6 @@ We have different types of orders, but all of them can be stored in the same for
 Running application with Docker
 ```console
 docker build -t smarttrader .
-docker run smarttrader -p 8080:8080
+docker run -p 8080:8080 smarttrader
 ```
 
