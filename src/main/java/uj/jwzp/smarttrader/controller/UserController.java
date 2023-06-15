@@ -1,5 +1,7 @@
 package uj.jwzp.smarttrader.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +22,8 @@ public class UserController {
     }
 
     private final UserService userService;
+    private static Logger logger = LoggerFactory.getLogger(StockController.class);
+
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -39,6 +43,8 @@ public class UserController {
     @DeleteMapping("/{username}")
     @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
     public ResponseEntity<String> deleteUser(@PathVariable("username") String username) {
+        logger.info("Trying to remove user {}.", username);
+
         boolean userExists = userService.existsByName(username);
         if (userExists) {
             userService.deleteUser(username);
@@ -50,6 +56,8 @@ public class UserController {
     @PatchMapping("/{username}")
     @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
     public ResponseEntity<String> updateUser(@PathVariable("username") String username, @RequestBody UserCredentialsDto userCredentials) {
+        logger.info("Trying to update user {}.", username);
+
         boolean userExists = userService.existsByName(username);
         if (userExists) {
             if (userCredentials.getUsername() != null && userService.existsByName(userCredentials.getUsername())) {
@@ -66,6 +74,8 @@ public class UserController {
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<String> depositFunds(@PathVariable("username") String username,
                                                @RequestParam("value") BigDecimal value) {
+        logger.info("User {} tries to deposit {}.", username, value);
+
         if (value.compareTo(BigDecimal.ZERO) < 0)
             return new ResponseEntity<>("Deposit value must be positive", HttpStatus.BAD_REQUEST);
         if (!userService.existsByName(username))
@@ -80,6 +90,8 @@ public class UserController {
     @PreAuthorize("#username == authentication.principal.username")
     public ResponseEntity<String> withdrawFunds(@PathVariable("username") String username,
                                                 @RequestParam("value") BigDecimal value) {
+        logger.info("User {} tries to withdraw {}.", username, value);
+
         if (!userService.existsByName(username))
             return new ResponseEntity<>("Username does not exist", HttpStatus.NOT_FOUND);
         if (value.compareTo(BigDecimal.ZERO) <= 0)

@@ -1,5 +1,7 @@
 package uj.jwzp.smarttrader.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import uj.jwzp.smarttrader.dto.OrderBookDto;
 import uj.jwzp.smarttrader.dto.PatchOrderDto;
@@ -21,6 +23,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
     private final Clock clock;
+    private static Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     public OrderService(OrderRepository orderRepository, UserRepository userRepository, StockRepository stockRepository, Clock clock) {
         this.orderRepository = orderRepository;
@@ -34,13 +37,18 @@ public class OrderService {
 
         if (order.getOrderType() != OrderType.MARKET && order.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             validationResponse.addMessage("Price should be a positive value.");
+            logger.trace("Negative order validation : non-positive value");
         }
         if (order.getQuantity() <= 0) {
             validationResponse.addMessage("Quantity should be a positive value.");
+            logger.trace("Negative order validation : non-positive quantity");
         }
         if (order.getOrderType() == OrderType.TIME_LIMIT && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
             validationResponse.addMessage("Cancellation time should be a future date.");
+            logger.trace("Negative order validation : past cancellation date");
         }
+
+        logger.trace("Order parameters validated successfully.");
 
         return validationResponse;
     }
@@ -50,9 +58,11 @@ public class OrderService {
 
         if (optionalUser.isEmpty()) {
             validationResponse.addMessage("User does not exist.");
+            logger.trace("Negative order validation : user not found");
         }
         if (optionalStock.isEmpty()) {
             validationResponse.addMessage("Invalid stock ticker.");
+            logger.trace("Negative order validation : stock not found");
         }
 
         if (!validationResponse.isValid()) {
@@ -64,13 +74,14 @@ public class OrderService {
 
         if (stock.getPrice() == null) {
             validationResponse.addMessage("Stock not available.");
+            logger.error("Price for existing stock {} is not present.", stock.getId());
+
             return validationResponse;
         }
 
         if (order.getOrderSide() == OrderSide.SELL) {
             return validateSellOrder(order, user, stock);
         }
-
         return validateBuyOrder(order, user, stock);
     }
 
@@ -85,7 +96,9 @@ public class OrderService {
                         .filter(asset -> asset.stockId.equals(stock.getId())).findFirst().get().quantity;
         if (userDoesNotHaveEnoughStockQuantity) {
             validationResponse.addMessage("Order quantity should be smaller or equal to the amount of stock that user owns");
+            logger.trace("Negative order validation : too large quantity");
         }
+        logger.trace("Successful quantity validation for SELL order.");
 
         return validationResponse;
     }
@@ -102,7 +115,9 @@ public class OrderService {
 
         if (totalPrice.compareTo(user.getCashBalance()) > 0) {
             validationResponse.addMessage("Total price should be smaller or equal to user cash balance");
+            logger.trace("Negative order validation : not enough funds");
         }
+        logger.trace("Successful price validation for BUY order.");
 
         return validationResponse;
     }
@@ -121,6 +136,7 @@ public class OrderService {
     public ValidationResponse addOrder(Order order) {
         var validationResponse = validateNewOrder(order);
         if (!validationResponse.isValid()) {
+            logger.debug("Negative order validation, order won't be added.");
             return validationResponse;
         }
 
@@ -131,18 +147,24 @@ public class OrderService {
 
         validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
         if (!validationResponse.isValid()) {
+            logger.debug("Negative order validation, order won't be added.");
             return validationResponse;
         }
 
+        logger.debug("Order positively validated.");
+
         boolean realised;
         if (isMarketOpen()) {
+            logger.debug("Trying to execute order.");
             realised = executeOrder(order, optionalUser, optionalStock);
         } else {
+            logger.debug("Order added outside market hours.");
             realised = false;
         }
 
         if (!realised && order.getOrderType() != OrderType.MARKET) {
             orderRepository.save(order);
+            logger.debug("Order {} added to active orders.", order.getId());
         }
 
         return new ValidationResponse(new ArrayList<>());
@@ -190,6 +212,8 @@ public class OrderService {
 
         userAssets.removeIf(a -> a.quantity == 0);
 
+        logger.info("User {} sold {} x {} for total {}.", user.getName(), order.getQuantity(), stock.getTicker(), totalPrice);
+
         return true;
     }
 
@@ -222,10 +246,14 @@ public class OrderService {
             userAssets.add(new Asset(stock.getId(), order.getQuantity()));
         }
 
+        logger.info("User {} bought {} x {} for total {}.", user.getName(), order.getQuantity(), stock.getTicker(), totalPrice);
+
         return true;
     }
 
     public void matchOrders() {
+        logger.info("Start of active orders matching.");
+
         var orders = orderRepository.findAll();
 
         List<Order> toRemove = new ArrayList<>();
@@ -233,6 +261,7 @@ public class OrderService {
             if (order.getOrderType() == OrderType.TIME_LIMIT
                     && order.getCancellationTime().isAfter(LocalDateTime.now(clock))) {
                 toRemove.add(order);
+                logger.debug("Order {} set to be removed after passing cancellation time.", order.getId());
                 continue;
             }
 
@@ -244,12 +273,14 @@ public class OrderService {
             var validationResponse = validateOrderBeforeExecuting(order, optionalUser, optionalStock);
             if (!validationResponse.isValid()) {
                 toRemove.add(order);
+                logger.debug("Order {} set to be removed after failed validation.", order.getId());
                 continue;
             }
 
             boolean isExecuted = executeOrder(order, optionalUser, optionalStock);
             if (isExecuted) {
                 toRemove.add(order);
+                logger.trace("Order {} got executed.", order.getId());
             }
         }
 
@@ -279,16 +310,22 @@ public class OrderService {
 
         if (patchOrderDto.getPrice() != null) {
             order.setPrice(patchOrderDto.getPrice());
+            logger.debug("Order {} changed price to {}.", order.getId(), patchOrderDto.getPrice());
         }
         if (patchOrderDto.getQuantity() != null) {
             order.setQuantity(patchOrderDto.getQuantity());
+            logger.debug("Order {} changed quantity to {}.", order.getId(), patchOrderDto.getQuantity());
         }
         if (patchOrderDto.getOrderSide() != null) {
             order.setOrderSide(patchOrderDto.getOrderSide());
+            logger.debug("Order {} swapped side.", order.getId());
         }
         if (order.getOrderType() == OrderType.TIME_LIMIT && patchOrderDto.getCancellationTime() != null) {
             order.setCancellationTime(patchOrderDto.getCancellationTime());
+            logger.debug("Order {} changed cancellation time to {}.", order.getId(), patchOrderDto.getCancellationTime());
         }
+
+        logger.info("Order {} is updated.", orderId);
 
         return addOrder(order);
     }
@@ -302,6 +339,8 @@ public class OrderService {
     }
 
     public List<OrderBookDto> getOrderBook(String ticker) {
+        logger.debug("Preparing order book for {}.", ticker);
+
         Optional<Stock> optionalStock = stockRepository.findStockByTicker(ticker);
         Stock stock = optionalStock.get();
 
