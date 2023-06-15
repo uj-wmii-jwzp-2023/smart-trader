@@ -15,7 +15,9 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
+  security-events: write
 
 jobs:
   build:
@@ -42,7 +44,6 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - permissions: write-all
       - uses: actions/checkout@master
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/gradle-jdk17@master
