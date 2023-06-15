@@ -23,17 +23,6 @@ public class StockApiWrapperTest {
         ReflectionTestUtils.setField(apiWrapper, "apiUrl", "https://stooq.com/q/l/?s=%s&f=c");
     }
 
-    @Disabled
-    @Test
-    public void test() {
-        try {
-            BigDecimal price = apiWrapper.getStockPrice("AAPL");
-            System.out.println(price);
-        } catch (Exception e) {
-            System.out.println("Stock not found.");
-        }
-    }
-
     @Test
     public void ParseLatestPrice_Should_Return_ValidPrice() {
         String response = "180.9500";
