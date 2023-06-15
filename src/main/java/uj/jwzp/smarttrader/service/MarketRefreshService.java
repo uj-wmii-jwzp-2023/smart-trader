@@ -38,7 +38,7 @@ public class MarketRefreshService {
                 BigDecimal newPrice = apiWrapper.getStockPrice(stock.getTicker());
                 stock.setPrice(newPrice);
                 stockRepository.save(stock);
-                System.out.println(stock.getTicker() + " price updated."); // fixme log
+                System.out.println(stock.getTicker() + " price updated to " + stock.getPrice() + "."); // fixme log
             } catch (Exception e) {
                 System.out.println(stock.getTicker() + " price not found."); // log
             }
