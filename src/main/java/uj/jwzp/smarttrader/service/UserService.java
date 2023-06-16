@@ -1,6 +1,7 @@
 package uj.jwzp.smarttrader.service;
 
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +18,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private static Logger logger = LoggerFactory.getLogger(UserService.class);
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -27,9 +29,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
+    public List<User> getAllUsers() { return userRepository.findAll(); }
 
     public Optional<User> getUserById(String id) {
         return userRepository.findById(id);
@@ -47,16 +47,22 @@ public class UserService {
         User user = getUserByName(username).orElseThrow();
         user.setCashBalance(user.getCashBalance().add(value));
         userRepository.save(user);
+
+        logger.info("User {} deposited {} to account.", username, value);
     }
 
     public void withdrawFunds(String username, BigDecimal value) {
         User user = getUserByName(username).orElseThrow();
         user.setCashBalance(user.getCashBalance().subtract(value));
         userRepository.save(user);
+
+        logger.info("User {} withdrawn {} from account.", username, value);
     }
 
     public void deleteUser(String username) {
         userRepository.deleteByName(username);
+
+        logger.info("Account of user {} got closed.", username);
     }
 
     public void updateUser(String username, UserCredentialsDto patchUser) {
@@ -66,12 +72,17 @@ public class UserService {
         boolean changed = false;
         if (patchUser.getUsername() != null) {
             changed = true;
-            user.setName(patchUser.getUsername());
+            String newName = patchUser.getUsername();
+            user.setName(newName);
+
+            logger.info("User {} changed name to {}.", username, newName);
         }
         if (patchUser.getPassword() != null) {
             changed = true;
             String encodedPassword = passwordEncoder.encode(patchUser.getPassword());
             user.setPassword(encodedPassword);
+
+            logger.info("User {} changed password.", username);
         }
 
         if (changed) {

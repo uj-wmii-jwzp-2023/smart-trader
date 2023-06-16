@@ -1,6 +1,8 @@
 package uj.jwzp.smarttrader.controller;
 
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +21,7 @@ public class StockController {
     private final StockService stockService;
 
     private final OrderService orderService;
+    private static Logger logger = LoggerFactory.getLogger(StockController.class);
 
     public StockController(StockService stockService, OrderService orderService) {
         this.stockService = stockService;
@@ -40,6 +43,8 @@ public class StockController {
 
     @PostMapping(consumes = "application/json")
     public ResponseEntity<String> addStock(@Valid @RequestBody Stock stock) {
+        logger.info("Trying to add new stock {}.", stock.getId());
+
         if (stockService.existsByTicker(stock.getTicker())) {
             return new ResponseEntity<>("Stock with the same ticker is already added.", HttpStatus.BAD_REQUEST);
         }
@@ -51,6 +56,8 @@ public class StockController {
     @PatchMapping("/{stockId}")
     public ResponseEntity<String> updateStock(@PathVariable("stockId") String stockId,
                                               @RequestBody PatchStockDto patchStockDto) {
+        logger.info("Trying to update stock {}.", stockId);
+
         if (!stockService.existsById(stockId)) {
             return new ResponseEntity<>("Stock does not exist", HttpStatus.NOT_FOUND);
         }
@@ -60,6 +67,8 @@ public class StockController {
 
     @DeleteMapping("/{stockId}")
     public ResponseEntity<String> deleteStock(@PathVariable("stockId") String stockId) {
+        logger.info("Trying to delete stock {}.", stockId);
+
         if (stockService.existsById(stockId)) {
             stockService.deleteById(stockId);
             return new ResponseEntity<>("Stock deleted successfully", HttpStatus.OK);
@@ -69,6 +78,8 @@ public class StockController {
 
     @GetMapping("/{ticker}/order-book")
     public ResponseEntity<List<OrderBookDto>> getOrderBook(@PathVariable("ticker") String ticker) {
+        logger.info("Request for order book for {}.", ticker);
+
         if (!stockService.existsByTicker(ticker)) {
             return new ResponseEntity<>(List.of(), HttpStatus.NOT_FOUND);
         }

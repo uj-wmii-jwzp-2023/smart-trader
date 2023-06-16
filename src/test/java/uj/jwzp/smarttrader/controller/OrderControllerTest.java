@@ -22,6 +22,7 @@ import uj.jwzp.smarttrader.model.OrderSide;
 import uj.jwzp.smarttrader.model.OrderType;
 import uj.jwzp.smarttrader.model.ValidationResponse;
 import uj.jwzp.smarttrader.service.OrderService;
+import uj.jwzp.smarttrader.service.StockService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,6 +43,9 @@ public class OrderControllerTest {
 
     @MockBean
     private OrderService orderService;
+
+    @MockBean
+    private StockService stockService;
 
     @MockBean
     private OrderMapper orderMapper;
@@ -195,6 +199,7 @@ public class OrderControllerTest {
         String requestBody = objectMapper.writeValueAsString(testedOrderDto);
 
         testedOrderDto.setUsername(dummyName);
+        given(stockService.existsByTicker(testedOrderDto.getTicker())).willReturn(Boolean.TRUE);
         given(orderMapper.toEntity(refEq(testedOrderDto, "orderType"))).willReturn(testedOrder);
         given(orderService.addOrder(any())).willReturn(new ValidationResponse(new ArrayList<>()));
 
@@ -215,6 +220,7 @@ public class OrderControllerTest {
 
         String dummyName = "Username";
         testedOrderDto.setUsername(dummyName);
+        given(stockService.existsByTicker(testedOrderDto.getTicker())).willReturn(Boolean.TRUE);
         given(orderMapper.toEntity(refEq(testedOrderDto, "orderType"))).willReturn(testedOrder);
 
         String url = String.format("/api/v1/users/%s/orders/%s", dummyName, orderType);

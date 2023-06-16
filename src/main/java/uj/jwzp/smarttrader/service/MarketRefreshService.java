@@ -1,5 +1,7 @@
 package uj.jwzp.smarttrader.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.util.List;
 public class MarketRefreshService {
     StockRepository stockRepository;
     private final OrderService orderService;
+    private static Logger logger = LoggerFactory.getLogger(MarketRefreshService.class);
     StockApiWrapper apiWrapper;
     public final static String MARKET_TIME_WINDOW = "10 */1 9-16 * * 1-5"; // every 70 second, 9am-5pm, Monday-Friday
 
@@ -32,15 +35,17 @@ public class MarketRefreshService {
     }
 
     public void updateAllStockPrices() {
+        logger.info("Updating stock prices.");
+
         List<Stock> stocks = stockRepository.findAll();
         for (var stock : stocks) {
             try {
                 BigDecimal newPrice = apiWrapper.getStockPrice(stock.getTicker());
                 stock.setPrice(newPrice);
                 stockRepository.save(stock);
-                System.out.println(stock.getTicker() + " price updated to " + stock.getPrice() + "."); // fixme log
+                logger.info("{} price updated to {}.", stock.getTicker(), newPrice);
             } catch (Exception e) {
-                System.out.println(stock.getTicker() + " price not found."); // log
+                logger.error("Unable to fetch price for {}.", stock.getTicker());
             }
         }
     }
