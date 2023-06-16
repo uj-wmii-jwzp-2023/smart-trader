@@ -19,7 +19,7 @@ public class MarketRefreshService {
     private final OrderService orderService;
     private static Logger logger = LoggerFactory.getLogger(MarketRefreshService.class);
     StockApiWrapper apiWrapper;
-    public final static String MARKET_TIME_WINDOW = "10 */1 9-16 * * 1-5"; // every 70 second, 9am-5pm, Monday-Friday
+    public final static String MARKET_TIME_WINDOW = "*/30 * 9-16 * * 1-5"; // every 30 seconds, 9am-5pm, Monday-Friday
 
     @Autowired
     public MarketRefreshService(StockRepository stockRepository, OrderService orderService, StockApiWrapper apiWrapper) {

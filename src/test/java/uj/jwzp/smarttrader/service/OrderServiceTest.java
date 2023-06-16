@@ -114,6 +114,7 @@ public class OrderServiceTest {
                 .usingRecursiveComparison()
                 .isEqualTo(List.of(new Asset(stock.getId(), order.getQuantity())));
         Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+        verify(userRepository).save(user);
     }
 
     @Test
@@ -130,6 +131,7 @@ public class OrderServiceTest {
                 .usingRecursiveComparison()
                 .isEqualTo(List.of(new Asset(stock.getId(), order.getQuantity())));
         Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+        verify(userRepository).save(user);
     }
 
     @Test
@@ -156,6 +158,7 @@ public class OrderServiceTest {
                 .usingRecursiveComparison()
                 .isEqualTo(List.of(new Asset(stock.getId(), quantity - order.getQuantity())));
         Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+        verify(userRepository).save(user);
     }
 
     @Test
@@ -174,6 +177,7 @@ public class OrderServiceTest {
         Assertions.assertThat(realised).isTrue();
         Assertions.assertThat(user.getAssets()).isEmpty();
         Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+        verify(userRepository).save(user);
     }
 
     @Test
@@ -189,6 +193,7 @@ public class OrderServiceTest {
         Assertions.assertThat(realised).isTrue();
         Assertions.assertThat(user.getAssets()).isEmpty();
         Assertions.assertThat(user.getCashBalance()).isEqualTo(expectedBalance);
+        verify(userRepository).save(user);
     }
 
     @Test
@@ -288,6 +293,7 @@ public class OrderServiceTest {
         var validationResponse = orderService.addOrder(order);
 
         verify(orderRepository, never()).save(any(Order.class));
+        verify(userRepository).save(any());
         Assertions.assertThat(validationResponse.isValid()).isTrue();
     }
 
@@ -340,6 +346,21 @@ public class OrderServiceTest {
     }
 
     @Test
+    public void AddOrder_Does_Not_Save_Time_Limit_Order_With_Old_Date() {
+        given(clock.instant()).willReturn(instant);
+        given(clock.getZone()).willReturn(ZoneId.of("CET"));
+
+        LocalDateTime oldDateTime = LocalDateTime.of(2022, 6, 12, 12, 0);
+        order.setOrderType(OrderType.TIME_LIMIT);
+        order.setCancellationTime(oldDateTime);
+        order.setPrice(BigDecimal.valueOf(2));
+
+        var validationResponse = orderService.addOrder(order);
+
+        Assertions.assertThat(validationResponse.isValid()).isFalse();
+    }
+
+    @Test
     public void MatchOrders_Executes_Orders_When_Possible() {
         List<Order> orders = new ArrayList<>(Arrays.asList(order));
 
@@ -378,6 +399,7 @@ public class OrderServiceTest {
         var validationResponse = orderService.updateOrder(order.getId(), patchOrderDto);
 
         verify(orderRepository, never()).save(any());
+        verify(userRepository).save(user);
         Assertions.assertThat(validationResponse.isValid()).isTrue();
         Assertions.assertThat(order.getQuantity()).isEqualTo(3);
         Assertions.assertThat(order.getPrice()).isEqualTo(newPrice);
@@ -398,6 +420,7 @@ public class OrderServiceTest {
         var validationResponse = orderService.updateOrder(order.getId(), patchOrderDto);
 
         verify(orderRepository, never()).save(order);
+        verify(userRepository, never()).save(any());
         Assertions.assertThat(validationResponse.isValid()).isFalse();
     }
 

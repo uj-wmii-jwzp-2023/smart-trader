@@ -212,6 +212,8 @@ public class OrderService {
 
         userAssets.removeIf(a -> a.quantity == 0);
 
+        userRepository.save(user);
+
         logger.info("User {} sold {} x {} for total {}.", user.getName(), order.getQuantity(), stock.getTicker(), totalPrice);
 
         return true;
@@ -246,6 +248,8 @@ public class OrderService {
             userAssets.add(new Asset(stock.getId(), order.getQuantity()));
         }
 
+        userRepository.save(user);
+
         logger.info("User {} bought {} x {} for total {}.", user.getName(), order.getQuantity(), stock.getTicker(), totalPrice);
 
         return true;
@@ -259,7 +263,7 @@ public class OrderService {
         List<Order> toRemove = new ArrayList<>();
         for (var order : orders) {
             if (order.getOrderType() == OrderType.TIME_LIMIT
-                    && order.getCancellationTime().isAfter(LocalDateTime.now(clock))) {
+                    && order.getCancellationTime().isBefore(LocalDateTime.now(clock))) {
                 toRemove.add(order);
                 logger.debug("Order {} set to be removed after passing cancellation time.", order.getId());
                 continue;
