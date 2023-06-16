@@ -36,7 +36,7 @@ public class OrderController {
     @GetMapping
     @PreAuthorize("#username == authentication.principal.username or hasAuthority('ADMIN')")
     public ResponseEntity<List<Order>> getAllOrders(@PathVariable("username") String username) {
-        return new ResponseEntity<>(orderService.getAllOrders(), HttpStatus.OK);
+        return new ResponseEntity<>(orderService.getOrdersByUserName(username), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
