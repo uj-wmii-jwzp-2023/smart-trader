@@ -18,7 +18,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("org.springframework.boot:spring-boot-starter-validation")
 //    implementation("ch.qos.logback:logback-classic:1.2.3")
-    implementation("org.projectlombok:lombok:1.18.26")
+    implementation("org.projectlombok:lombok:1.18.28")
     testImplementation("org.assertj:assertj-core:3.24.2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
